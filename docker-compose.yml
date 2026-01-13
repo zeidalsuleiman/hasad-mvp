@@ -4,6 +4,9 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    environment:
+      - JWT_SECRET=local-dev-jwt-secret
+
   frontend:
     build: ./frontend
     ports:

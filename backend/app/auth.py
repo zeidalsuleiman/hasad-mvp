@@ -1,9 +1,11 @@
+import os
 from fastapi import APIRouter, HTTPException
 from jose import jwt
 from datetime import datetime, timedelta
 
 router = APIRouter()
-SECRET_KEY = "hasad-secret"
+
+SECRET_KEY = os.getenv("JWT_SECRET", "dev-only-secret")  # env in prod/CI
 ALGORITHM = "HS256"
 
 users = {}
@@ -21,3 +23,4 @@ def login(username: str, password: str):
     payload = {"sub": username, "exp": datetime.utcnow() + timedelta(hours=1)}
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token}
+

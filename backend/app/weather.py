@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Header
 import requests
 from jose import jwt
+import os
 
 router = APIRouter()
-SECRET_KEY = "hasad-secret"
+SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-change-me")
 
 def verify_token(authorization: str = Header(...)):
     token = authorization.split(" ")[1]
