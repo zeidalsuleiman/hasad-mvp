@@ -1,4 +1,4 @@
-name: security-only
+name: Non-Functional - Security Scan (Bandit)
 
 on:
   push:
