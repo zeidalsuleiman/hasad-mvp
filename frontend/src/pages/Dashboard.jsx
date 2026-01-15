@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import logo from "../assets/hasad-logo.png";
 import { api } from "../api/client";
+import WeatherCards from "../components/Weather.jsx";
 
 export default function Dashboard({ token, onLogout }) {
   const [lat, setLat] = useState("");
@@ -99,21 +100,10 @@ export default function Dashboard({ token, onLogout }) {
                 ولا يرجع token من /auth/login، لازم نعدل backend يرجّع token.
               </div>
             </div>
-          )}
-
-          {data && (
-            <pre
-              style={{
-                background: "#0b1220",
-                color: "#7CFF91",
-                borderRadius: 14,
-                padding: 14,
-                overflow: "auto",
-              }}
-            >
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          )}
+          )} 
+          
+          {data && <WeatherCards data={data} lat={lat} lon={lon} />}
+          
         </section>
       </main>
     </div>

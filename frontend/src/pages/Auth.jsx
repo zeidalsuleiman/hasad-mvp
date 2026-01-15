@@ -3,10 +3,10 @@ import logo from "../assets/hasad-logo.png";
 import { api } from "../api/client";
 
 export default function Auth({ onAuthed }) {
-  const [tab, setTab] = useState("login"); // login | signup
+  const [tab, setTab] = useState("login"); 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [email, setEmail] = useState(""); // optional
+  const [email, setEmail] = useState("");
   const [confirm, setConfirm] = useState("");
   const [msg, setMsg] = useState("");
 
@@ -15,7 +15,7 @@ export default function Auth({ onAuthed }) {
     try {
       const token = await api.login(username, password);
       setMsg("✅ Logged in");
-      onAuthed(token); // ✅ بدل onLoginSuccess
+      onAuthed(token); 
     } catch (e) {
       setMsg(`❌ ${e.message}`);
     }
