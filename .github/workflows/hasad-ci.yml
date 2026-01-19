@@ -27,10 +27,10 @@ jobs:
           pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Run Unit Tests
+      - name: Run Unit Tests # Functional test
         run: pytest backend || echo "No tests yet"
 
-      - name: Run Security Scan (Bandit)
+      - name: Run Security Scan (Bandit) # Nom-Functional test
         run: bandit -r backend
 
   docker-build:
