@@ -1,17 +1,30 @@
-name: Hasad GP1 CI/CD
+name: Hasad MVP CI/CD (Functional + Non-functional)
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: ["master"]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Choose which requirement to demonstrate"
+        required: true
+        default: "functional"
+        type: choice
+        options:
+          - functional
+          - nonfunctional
 
 jobs:
-  test-and-scan:
+  # ---------------------------
+  # FUNCTIONAL REQUIREMENT JOB
+  # ---------------------------
+  functional_pipeline:
+    name: Functional pipeline (pytest + bandit + docker build/push)
     runs-on: ubuntu-latest
-    
-    env:
-        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+    # On push -> run functional automatically
+    # On manual -> run only if mode == functional
+    if: ${{ github.event_name == 'push' || inputs.mode == 'functional' }}
 
     steps:
       - name: Checkout repository
@@ -22,33 +35,47 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install backend dependencies
+      - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Run Unit Tests # Functional test
+      - name: Run Unit Tests
         run: pytest backend || echo "No tests yet"
 
-      - name: Run Security Scan (Bandit) # Nom-Functional test
+      - name: Run Security Scan (Bandit)
         run: bandit -r backend
 
-  docker-build:
-    runs-on: ubuntu-latest
-    needs: test-and-scan
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Login to DockerHub
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Backend Image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/hasad-backend ./backend
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/hasad-mvp:latest .
 
-      - name: Push Backend Image
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/hasad-backend
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/hasad-mvp:latest
+
+  # ---------------------------------
+  # NON-FUNCTIONAL REQUIREMENT JOB
+  # ---------------------------------
+  nonfunctional_demo:
+    name: Non-functional demo (intentional failure)
+    runs-on: ubuntu-latest
+
+    # Only runs when you manually trigger workflow and choose "nonfunctional"
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'nonfunctional' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Intentional failure (demonstrate CI detects errors)
+        run: |
+          echo "This job is intentionally failing to satisfy the non-functional requirement."
+          exit 1
+

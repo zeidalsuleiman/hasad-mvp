@@ -96,8 +96,7 @@ export default function Dashboard({ token, onLogout }) {
             <div style={{ color: "#b91c1c", fontWeight: 700 }}>
               ❌ {err}
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-                ملاحظة: إذا الـ backend عندك يحتاج JWT حقيقي للـ /weather
-                ولا يرجع token من /auth/login، لازم نعدل backend يرجّع token.
+                Please check the coordinates and try again.
               </div>
             </div>
           )} 
