@@ -1,4 +1,4 @@
-name: Non-Functional - Security Scan (Bandit)
+name: Non-Functional - Security Scan (Bandit) #NFW
 
 on:
   push:
