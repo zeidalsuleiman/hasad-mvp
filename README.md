@@ -15,4 +15,4 @@ HASAD (MVP): As part of this project, an initial implementation (MVP) of HASAD w
 4. Visualization of weather information through a simple and user-friendly dashboard.
 5. Containerized deployment using Docker and CI/CD pipelies
 
-This initial implementation demonstrates the feasibility of the proposed HASAD system and provides a solid foundation for extending the platform to include the full set we discussed in the report.
+This initial implementation demonstrates the feasibility of the proposed HASAD system and provides a solid foundation for extending the platform to include the full set we discussed in the report..
