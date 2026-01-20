@@ -1,8 +1,6 @@
-version: "3"
-
 services:
   backend:
-    image: <zeidalsuleiman>/hasad-backend:latest
+    image: zeidalsuleiman/hasad-backend:latest
     ports:
       - "8000:8000"
     environment:
@@ -10,7 +8,7 @@ services:
       - OPENWEATHER_API_KEY=fb988a7e6ed75953c7656513020fe1b1
 
   frontend:
-    image: <zeidalsuleiman>/hasad-frontend:latest
+    image: zeidalsuleiman/hasad-frontend:latest
     ports:
       - "3000:3000"
     depends_on:
