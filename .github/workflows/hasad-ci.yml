@@ -1,4 +1,4 @@
-name: Functional - Pytest + Docker Build/Push
+name: Functional - Pytest + Docker Build/Push #FW1
 
 on:
   push:
@@ -42,7 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: pytest
 
-    # Build on PRs too, but only push on push events
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
