@@ -1,0 +1,17 @@
+services:
+  backend:
+    image: zeidalsuleiman/hasad-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - JWT_SECRET=local-dev-jwt-secret
+      - OPENWEATHER_API_KEY=fb988a7e6ed75953c7656513020fe1b1
+
+  frontend:
+    image: zeidalsuleiman/hasad-frontend:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_BASE=http://localhost:8000
