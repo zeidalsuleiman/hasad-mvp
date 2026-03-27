@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+python-jose
+requests
+pytest
+bandit
