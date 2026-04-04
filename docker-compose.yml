@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=hasad
+      - POSTGRES_USER=hasad
+      - POSTGRES_PASSWORD=hasad_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hasad"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://hasad:hasad_password@db:5432/hasad
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_BASE=http://localhost:8000
+
+volumes:
+  postgres_data:

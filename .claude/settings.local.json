@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest tests/test_auth.py -v --tb=short)",
+      "Bash(python -c \"import bcrypt; print\\('bcrypt installed'\\)\")",
+      "Bash(python -c \"from passlib.context import CryptContext; ctx = CryptContext\\(schemes=['bcrypt'], deprecated='auto'\\); print\\('passlib bcrypt works:', ctx.hash\\('test'\\)\\)\")",
+      "Bash(python -m pytest tests/ -v --tb=short -x)",
+      "Bash(python -m pytest tests/test_weather.py::test_get_current_weather_success -v --tb=long -s)",
+      "Bash(python -m pytest tests/test_weather.py::test_get_current_weather_success -v --tb=short)",
+      "Bash(python -m pytest tests/test_weather.py -v --tb=short)",
+      "Bash(python -m pytest tests/ -v --tb=line)",
+      "Bash(python -c \"from app.core.config import settings; print\\('DATABASE_URL:', settings.database_url\\)\")",
+      "Bash(python -m pytest tests/test_weather.py::test_get_current_weather_success -vvv --tb=short)",
+      "Bash(python -m pytest tests/test_auth.py tests/test_farms.py tests/test_crops.py -v --tb=line)",
+      "Bash(python -m pytest tests/test_weather.py::test_get_current_weather_success -v --tb=line)",
+      "Bash(python -m pytest tests/test_llm.py tests/test_assistant.py -v)",
+      "Bash(pip install:*)",
+      "Bash(python -m pytest tests/ -v --tb=no -q)",
+      "Bash(python -m pytest tests/test_assistant.py::test_chat_context_includes_crop -v)",
+      "Bash(python -m pytest tests/test_assistant.py::test_chat_context_includes_crop -v --tb=short)",
+      "Bash(python -m pytest tests/test_assistant.py::test_chat_context_includes_crop -v -s)",
+      "Bash(python -m pytest tests/test_llm.py tests/test_assistant.py -v --tb=no -q)",
+      "Bash(python -m pytest tests/ --co -q)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
