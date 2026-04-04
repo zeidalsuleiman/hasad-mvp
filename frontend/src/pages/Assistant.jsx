@@ -174,33 +174,7 @@ export default function Assistant() {
 
   return (
     <div style={wrap}>
-      <header style={header}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img
-            src={logo}
-            alt="HASAD"
-            style={{ width: "clamp(120px, 20vw, 180px)", height: "auto" }}
-          />
-          <div>
-            <div style={{ fontWeight: 900 }}>AI Assistant</div>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>
-              {farm.name} • {user?.full_name || "Farmer"}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <button style={secondaryBtn} onClick={handleClear}>
-            Clear Chat
-          </button>
-          <button style={secondaryBtn} onClick={() => navigate(`/farms/${farmId}`)}>
-            Back to Farm
-          </button>
-          <button style={logoutBtn} onClick={logout}>
-            Logout
-          </button>
-        </div>
-      </header>
+      <Header user={user} logout={logout} farmName={farm.name} navigate={navigate} farmId={farmId} handleClear={handleClear} />
 
       <main style={main}>
         {error && (
@@ -213,7 +187,7 @@ export default function Assistant() {
           <div style={messagesArea}>
             {messages.length === 0 ? (
               <div style={emptyState}>
-                <div style={emptyIcon}><IconBot size={48} /></div>
+                <div style={emptyIcon}><IconBot size={56} /></div>
                 <div style={emptyTitle}>Start a Conversation</div>
                 <div style={emptyText}>
                   Ask about irrigation, disease risk, weather, or general farming advice.
@@ -257,12 +231,40 @@ export default function Assistant() {
               type="submit"
               disabled={sending || !input.trim()}
             >
-              {sending ? "..." : <IconSend />}
+              {sending ? <div style={loadingSpinner} /> : <IconSend />}
             </button>
           </form>
         </div>
       </main>
     </div>
+  );
+}
+
+function Header({ user, logout, farmName, navigate, farmId, handleClear }) {
+  return (
+    <header style={header}>
+      <div style={headerLeft}>
+        <img
+          src={logo}
+          alt="HASAD"
+          style={{ ...logoStyle, cursor: "pointer" }}
+          onClick={() => navigate(`/farms/${farmId}`)}
+        />
+        <div>
+          <div style={brandName}>AI Assistant</div>
+          <div style={farmLabel}>{farmName}</div>
+        </div>
+      </div>
+
+      <div style={headerRight}>
+        <button style={secondaryBtn} onClick={handleClear}>
+          Clear Chat
+        </button>
+        <button style={logoutBtn} onClick={logout}>
+          Logout
+        </button>
+      </div>
+    </header>
   );
 }
 
@@ -352,30 +354,60 @@ const IconWarning = ({ size = 16 }) => (
 
 const wrap = {
   minHeight: "100vh",
-  background:
-    "radial-gradient(700px circle at 20% 10%, rgba(22,163,74,0.12), transparent 55%), linear-gradient(180deg, #F7FBFA 0%, #ECF7F1 100%)",
+  background: "#F8FAFC",
 };
 
 const header = {
-  height: 72,
+  height: "72px",
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  padding: "0 22px",
+  padding: "0 32px",
+  background: "white",
   borderBottom: "1px solid rgba(0,0,0,0.06)",
-  background: "rgba(255,255,255,0.7)",
-  backdropFilter: "blur(10px)",
   position: "sticky",
   top: 0,
   zIndex: 100,
 };
 
-const main = {
-  maxWidth: 980,
-  margin: "18px auto",
-  padding: "0 18px 40px",
-  display: "grid",
+const headerLeft = {
+  display: "flex",
+  alignItems: "center",
   gap: 16,
+};
+
+const logoStyle = {
+  height: "40px",
+  width: "auto",
+};
+
+const brandName = {
+  fontSize: "18px",
+  fontWeight: 800,
+  color: "#0F766E",
+  letterSpacing: "-0.5px",
+};
+
+const farmLabel = {
+  fontSize: "13px",
+  color: "#0F766E",
+  fontWeight: 700,
+  marginTop: 2,
+};
+
+const headerRight = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+};
+
+const main = {
+  maxWidth: 1000,
+  margin: "24px auto",
+  padding: "0 24px 40px",
+  height: "calc(100vh - 72px)",
+  display: "flex",
+  flexDirection: "column",
 };
 
 const loadingStyle = {
@@ -399,29 +431,31 @@ const errorBox = {
   background: "#FEE2E2",
   border: "1px solid #FCA5A5",
   color: "#B91C1C",
-  padding: "12px",
-  borderRadius: 10,
-  fontSize: 13,
+  padding: "14px 16px",
+  borderRadius: 12,
+  marginBottom: 16,
+  fontSize: "14px",
+  fontWeight: 600,
 };
 
 const chatContainer = {
-  background: "var(--surface)",
-  border: "1px solid var(--border)",
-  borderRadius: "var(--radius)",
-  boxShadow: "var(--shadow)",
+  background: "white",
+  border: "1px solid rgba(0,0,0,0.06)",
+  borderRadius: 16,
+  boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
   display: "flex",
   flexDirection: "column",
-  height: "calc(100vh - 180px)",
-  minHeight: 500,
+  flex: 1,
+  overflow: "hidden",
 };
 
 const messagesArea = {
   flex: 1,
-  padding: 20,
+  padding: "24px",
   overflowY: "auto",
   display: "flex",
   flexDirection: "column",
-  gap: 16,
+  gap: 20,
 };
 
 const emptyState = {
@@ -473,19 +507,19 @@ const userBubble = {
   maxWidth: "70%",
   background: "#0F766E",
   color: "white",
-  borderRadius: 16,
-  borderRadiusBottomRight: 4,
-  padding: 14,
+  borderRadius: 18,
+  borderRadiusBottomRight: 6,
+  padding: "16px 18px",
 };
 
 const assistantBubble = {
   alignSelf: "flex-start",
   maxWidth: "80%",
-  background: "white",
-  border: "1px solid rgba(0,0,0,0.08)",
-  borderRadius: 16,
-  borderRadiusBottomLeft: 4,
-  padding: 14,
+  background: "#F8FAFC",
+  border: "1px solid rgba(0,0,0,0.06)",
+  borderRadius: 18,
+  borderRadiusBottomLeft: 6,
+  padding: "16px 18px",
 };
 
 const bubbleHeader = {
@@ -506,9 +540,10 @@ const bubbleRole = {
 };
 
 const bubbleContent = {
-  fontSize: 14,
+  fontSize: "14",
   lineHeight: 1.6,
   whiteSpace: "pre-wrap",
+  color: "#0F172A",
 };
 
 const bubbleFooter = {
@@ -553,34 +588,44 @@ const sourceTag = {
 };
 
 const inputArea = {
-  padding: 16,
+  padding: "16px 20px",
   borderTop: "1px solid rgba(0,0,0,0.06)",
-  display: "flex",
-  gap: 10,
   background: "white",
-  borderRadius: "0 0 var(--radius) var(--radius)",
+  display: "flex",
+  gap: 12,
 };
 
 const chatInput = {
   flex: 1,
-  padding: "12px 16px",
-  borderRadius: 12,
+  padding: "14px 18px",
+  borderRadius: 24,
   border: "1px solid rgba(0,0,0,0.1)",
   outline: "none",
   background: "#F8FAFC",
-  fontSize: 14,
+  fontSize: "14",
+  fontWeight: 500,
 };
 
 const sendButton = {
-  padding: "12px 16px",
-  borderRadius: 12,
+  padding: "14px 18px",
+  borderRadius: 24,
   border: 0,
   background: "#0F766E",
   color: "white",
   cursor: "pointer",
   display: "grid",
   placeItems: "center",
-  minWidth: 48,
+  minWidth: 52,
+  transition: "all 0.2s",
+};
+
+const loadingSpinner = {
+  width: "18px",
+  height: "18px",
+  border: "2px solid rgba(255,255,255,0.3)",
+  borderTop: "2px solid white",
+  borderRadius: "50%",
+  animation: "spin 0.8s linear infinite",
 };
 
 const secondaryBtn = {

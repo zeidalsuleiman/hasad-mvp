@@ -24,7 +24,8 @@
       "Bash(python -m pytest tests/test_llm.py tests/test_assistant.py -v --tb=no -q)",
       "Bash(python -m pytest tests/ --co -q)",
       "Bash(npm run:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm list:*)"
     ]
   }
 }

@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    container_name: hasad-db
     environment:
       - POSTGRES_DB=hasad
       - POSTGRES_USER=hasad
@@ -13,12 +14,17 @@ services:
       test: ["CMD-SHELL", "pg_isready -U hasad"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+    networks:
+      - hasad-network
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    container_name: hasad-backend
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
     depends_on:
@@ -26,19 +32,42 @@ services:
         condition: service_healthy
     environment:
       - DATABASE_URL=postgresql+psycopg2://hasad:hasad_password@db:5432/hasad
-      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-in-production}
+      - JWT_ALGORITHM=HS256
+      - JWT_EXPIRE_MINUTES=1440
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - APP_NAME=HASAD
+      - APP_VERSION=1.0.0
+      - DEBUG=false
+    volumes:
+      - ./backend:/app
+    networks:
+      - hasad-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: hasad-frontend
     ports:
       - "3000:3000"
     depends_on:
       - backend
     environment:
       - REACT_APP_API_BASE=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    networks:
+      - hasad-network
+    command: npm start
 
 volumes:
   postgres_data:
+  frontend_node_modules:
+
+networks:
+  hasad-network:
+    driver: bridge
