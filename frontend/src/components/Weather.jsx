@@ -193,8 +193,8 @@ function MiniTile({ title, value, icon, tone }) {
   const toneStyle = toneStyles[tone] || toneStyles.gray;
 
   return (
-    <div style={{ ...styles.tile, ...toneStyle.bg }}>
-      <div style={{ ...styles.tileIcon, ...toneStyle.icon }}>{icon}</div>
+    <div style={{ ...styles.tile, background: toneStyle.bg }}>
+      <div style={{ ...styles.tileIcon, color: toneStyle.icon }}>{icon}</div>
       <div>
         <div style={styles.tileTitle}>{title}</div>
         <div style={styles.tileValue}>{value}</div>
@@ -204,26 +204,11 @@ function MiniTile({ title, value, icon, tone }) {
 }
 
 const toneStyles = {
-  blue: {
-    bg: { background: "#EAF2FF" },
-    icon: { color: "#2563EB" },
-  },
-  green: {
-    bg: { background: "#EAFBF0" },
-    icon: { color: "#16A34A" },
-  },
-  purple: {
-    bg: { background: "#F3E8FF" },
-    icon: { color: "#7C3AED" },
-  },
-  orange: {
-    bg: { background: "#FFF2E6" },
-    icon: { color: "#F97316" },
-  },
-  gray: {
-    bg: { background: "#F3F4F6" },
-    icon: { color: "#374151" },
-  },
+  blue: { background: "#EAF2FF", icon: "#2563EB" },
+  green: { background: "#EAFBF0", icon: "#16A34A" },
+  purple: { background: "#F3E8FF", icon: "#7C3AED" },
+  orange: { background: "#FFF2E6", icon: "#F97316" },
+  gray: { background: "#F3F4F6", icon: "#374151" },
 };
 
 const styles = {

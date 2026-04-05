@@ -17,12 +17,6 @@ COPY app ./app
 COPY alembic.ini .
 COPY alembic ./alembic
 
-# Create a simple entrypoint script
-RUN echo "#!/bin/bash\n\
-python -c \"from app.database import engine; from app.models import Base; Base.metadata.create_all(bind=engine)\"\n\
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000" > /app/entrypoint.sh && \
-chmod +x /app/entrypoint.sh
-
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -30,5 +24,5 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["/app/entrypoint.sh"]
+# Default command (can be overridden by docker-compose)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

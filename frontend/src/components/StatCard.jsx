@@ -87,7 +87,7 @@ export default function StatCard({ title, value, icon, trend, color = "green" })
   return (
     <div style={cardStyle}>
       <div style={contentStyle}>
-        <div style={{ ...iconContainer, ...colors.bg, color: colors.icon }}>
+        <div style={{ ...iconContainer, background: colors.bg, color: colors.icon }}>
           {icon || icons.farms}
         </div>
         <div style={textStyle}>
@@ -113,7 +113,7 @@ export function WeatherStatCard({ type, value, label }) {
 
   return (
     <div style={{ ...cardStyle, ...weatherCardStyle }}>
-      <div style={{ ...iconContainer, ...colors.bg, color: colors.icon }}>
+      <div style={{ ...iconContainer, background: colors.bg, color: colors.icon }}>
         {icon}
       </div>
       <div>

@@ -28,7 +28,8 @@ async function request(path, { method = "GET", headers = {}, body } = {}) {
   const text = await res.text();
   try {
     data = text ? JSON.parse(text) : null;
-  } catch {
+  } catch (e) {
+    console.error("Failed to parse response:", text);
     data = text || null;
   }
 

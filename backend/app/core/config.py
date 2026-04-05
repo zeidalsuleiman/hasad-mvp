@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg2://hasad:hasad_password@db:5432/hasad"
 
     # Security
-    jwt_secret_key: str = "dev-secret-change-me"
+    jwt_secret: str = "dev-secret-change-me"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24  # 24 hours
 

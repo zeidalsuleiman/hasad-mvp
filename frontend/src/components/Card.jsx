@@ -24,9 +24,10 @@ export function CardBody({ children, style = {} }) {
   );
 }
 
+// Fixed style objects to avoid React 19 compatibility issues
 const cardStyle = {
-  background: "white",
-  borderRadius: 16,
+  background: "#FFFFFF",
+  borderRadius: "16px",
   border: "1px solid rgba(0,0,0,0.06)",
   boxShadow: "0 4px 20px rgba(0,0,0,0.04)",
   overflow: "hidden",

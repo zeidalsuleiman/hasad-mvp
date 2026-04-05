@@ -35,8 +35,6 @@ services:
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-me-in-production}
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRE_MINUTES=1440
-      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - APP_NAME=HASAD
       - APP_VERSION=1.0.0
       - DEBUG=false
@@ -59,14 +57,14 @@ services:
       - REACT_APP_API_BASE=http://localhost:8000
     volumes:
       - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
+      - /app/node_modules
     networks:
       - hasad-network
-    command: npm start
+    stdin_open: true
+    tty: true
 
 volumes:
   postgres_data:
-  frontend_node_modules:
 
 networks:
   hasad-network:

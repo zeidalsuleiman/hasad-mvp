@@ -97,25 +97,12 @@ export default function Disease({ farmId, data, onRefresh }) {
 
   const riskLevel = data.risk_level?.toLowerCase() || "low";
   const riskConfig = {
-    high: {
-      color: "#DC2626",
-      bg: "#FEE2E2",
-      icon: <IconWarning />,
-      label: "High Risk",
-    },
-    medium: {
-      color: "#F59E0B",
-      bg: "#FEF3C7",
-      icon: <IconWarning />,
-      label: "Medium Risk",
-    },
-    low: {
-      color: "#16A34A",
-      bg: "#DCFCE7",
-      icon: <IconCheck />,
-      label: "Low Risk",
-    },
-  }[riskLevel] || { color: "#6B7280", bg: "#F3F4F6", icon: <IconShield />, label: "Unknown" };
+    high: { color: "#DC2626", bg: "#FEE2E2", icon: <IconWarning />, label: "High Risk" },
+    medium: { color: "#F59E0B", bg: "#FEF3C7", icon: <IconWarning />, label: "Medium Risk" },
+    low: { color: "#16A34A", bg: "#DCFCE7", icon: <IconCheck />, label: "Low Risk" },
+  };
+
+  const currentRisk = riskConfig[riskLevel] || { color: "#6B7280", bg: "#F3F4F6", icon: <IconShield />, label: "Unknown" };
 
   return (
     <div style={styles.wrapper}>
