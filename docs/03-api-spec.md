@@ -4,9 +4,22 @@
 /api/v1
 
 ## Auth
+
 POST /auth/register
 POST /auth/login
 GET /auth/me
+
+# Email verification (OTP)
+POST /auth/verify-email
+
+# Password reset (OTP-based)
+POST /auth/forgot-password
+POST /auth/reset-password
+
+# 2FA (if enabled)
+POST /auth/2fa/verify
+POST /auth/2fa/enable
+POST /auth/2fa/disable
 
 ## Farms
 GET /farms

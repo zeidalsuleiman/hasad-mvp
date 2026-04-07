@@ -466,3 +466,63 @@ Use this file to record implementation-time assumptions.
 **No database migration needed:** MVP is stateless, no persistence tables
 
 **Ready for Phase 4:** Full LLM integration, session persistence, reporting endpoints, admin observability.
+
+---
+
+### Date: 2026-04-06 (Authentication Hardening Phase)
+
+**Area: Account Activation**
+
+**Assumption:** Account activation is optional and controlled by the `ACTIVATION_REQUIRED` environment variable. Default is `false` to allow immediate login.
+
+**Why needed:** Production systems typically require email verification, but this adds friction. Making it configurable allows development without email infrastructure while enabling it for production.
+
+**Impact:** When `ACTIVATION_REQUIRED=false` (default), new users are immediately verified. When `true`, users receive an activation token and must verify before login. In debug mode (`DEBUG=true`), the activation token is returned in the API response for testing purposes. In production, it would be sent via email.
+
+---
+
+### Date: 2026-04-06 (Authentication Hardening Phase)
+
+**Area: Password Reset Flow**
+
+**Assumption:** Password reset tokens expire after 1 hour (configurable via `PASSWORD_RESET_EXPIRE_HOURS`). Tokens are SHA-256 hashed before storage. The forgot-password endpoint always returns success to prevent email enumeration.
+
+**Why needed:** Security best practice to limit reset window and prevent timing attacks. Hashing tokens prevents database compromise from allowing password resets. Generic success messages prevent attackers from determining which emails are registered.
+
+**Impact:** Password reset flow is secure and prevents enumeration. Users receive generic "if your email is registered" message. Implementation requires email service integration for production (currently tokens are logged for development).
+
+---
+
+### Date: 2026-04-06 (Authentication Hardening Phase)
+
+**Area: Two-Factor Authentication (2FA)**
+
+**Assumption:** 2FA is optional, user-controlled via TOTP (Time-based One-Time Password). Users can enable/disable 2FA, and receive 10 backup codes for recovery. TOTP uses standard configuration (6 digits, 30-second interval).
+
+**Why needed:** TOTP is the industry standard for 2FA, works offline with authenticator apps, and has no SMS cost. Optional 2FA provides security for users who want it without mandatory friction. Backup codes prevent lockout when authenticator is lost.
+
+**Impact:** Users with 2FA enabled must provide a code during login. Login returns `requires_2fa=true` flag, triggering second verification step. Backend uses pyotp for TOTP generation/verification. Secrets are SHA-256 hashed before storage. Backup codes are individually hashed and marked as consumed after use.
+
+---
+
+### Date: 2026-04-06 (Authentication Hardening Phase)
+
+**Area: Password Validation**
+
+**Assumption:** Backend enforces minimum 8-character password length only. Additional complexity rules are displayed as recommendations in the frontend but not enforced by the backend.
+
+**Why needed:** Minimum length prevents trivially weak passwords. Complexity rules vary by security policy and user preferences. Frontend guidance encourages stronger passwords without blocking users who prefer memorable patterns.
+
+**Impact:** Users can set any 8+ character password. Frontend shows recommendations (uppercase, lowercase, numbers, special characters) but these are not backend-enforced. Passwords are bcrypt-hashed before storage.
+
+---
+
+### Date: 2026-04-06 (Authentication Hardening Phase)
+
+**Area: Token Security**
+
+**Assumption:** Activation tokens and password reset tokens are 32-byte random values (64 hex characters). Tokens are SHA-256 hashed before database storage. Tokens have configurable expiration (24 hours for activation, 1 hour for password reset).
+
+**Why needed:** Cryptographically secure random tokens prevent brute-force guessing. Hashing prevents token reuse even if database is compromised. Expiration limits security window.
+
+**Impact:** Tokens are generated using Python's `secrets` module. Hashing uses SHA-256 via hashlib. Verification compares hash of provided token with stored hash. Expired tokens are rejected with appropriate error message.

@@ -3,9 +3,22 @@
 ## Authentication
 - user can register
 - duplicate email is rejected
+- user receives verification code (OTP)
+- user can verify email with valid OTP
+- invalid/expired OTP is rejected
+
 - user can log in
 - invalid password is rejected
 - authenticated user can fetch /auth/me
+
+- user can request password reset
+- reset OTP is sent
+- user can reset password with valid OTP
+- invalid OTP is rejected
+
+- 2FA enabled user requires second verification step
+
+- frontend can call backend without CORS errors
 
 ## Farm management
 - authenticated user can create a farm
@@ -30,3 +43,13 @@
 - user can create a chat session
 - user can send a message
 - assistant reply is stored
+
+## Dashboard
+
+- authenticated user can access dashboard
+- dashboard loads without errors
+- weather data is displayed
+- irrigation recommendation is displayed if available
+- disease risk is displayed if available
+- loading states appear during API calls
+- errors are handled gracefully

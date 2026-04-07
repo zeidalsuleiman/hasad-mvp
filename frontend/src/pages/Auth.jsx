@@ -1,434 +1,459 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/hasad-logo.png";
 import { useAuth } from "../contexts/AuthContext";
 
-// Icons
-const IconCheck = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
+// ─── PasswordField — module level to prevent remount/focus loss ───────────────
+function PasswordField({ label, value, onChange, placeholder, error, disabled = false }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div>
+      <label style={styles.label}>{label}</label>
+      <div style={{ position: "relative" }}>
+        <input
+          style={{ ...styles.input, paddingRight: 40 }}
+          type={show ? "text" : "password"}
+          placeholder={placeholder || "Enter password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          disabled={disabled}
+          style={styles.eyeBtn}
+          tabIndex={-1}
+          aria-label={show ? "Hide password" : "Show password"}
+        >
+          {show ? "🙈" : "👁"}
+        </button>
+      </div>
+      {error && <p style={styles.fieldErr}>{error}</p>}
+    </div>
+  );
+}
 
-const IconEye = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11-8-11 8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
-
-const IconEyeOff = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a10.07 10.07 0 0 1 5.94-5.94" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <line x1="9.9" y1="4.9" x2="14.1" y2="9.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const IconLock = ({ size = 48 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const IconUser = ({ size = 48 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
-const IconAlert = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-    <path d="M12 9v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    <path d="M12 17h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
-const IconInfo = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-    <path d="M12 16v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    <path d="M12 8h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-  </svg>
-);
-
-const IconClose = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const IconSpinner = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M19.07 4.93l-2.83 2.83" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <animateTransform
-        attributeName="transform"
-        type="rotate"
-        from="0 12 12"
-        to="360 12 12"
-        dur="1s"
-        repeatCount="indefinite"
-      />
-    </path>
-  </svg>
-);
-
+// ─── Main Auth component ──────────────────────────────────────────────────────
 export default function Auth() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState("login");
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [status, setStatus] = useState(null); // "loading" | "success" | "error" | null
-  const [errorMessage, setErrorMessage] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [showForgotModal, setShowForgotModal] = useState(false);
 
-  const { login, register, isAuthenticated } = useAuth();
+  // Form state
+  const [tab,       setTab]       = useState("login");
+  const [fullName,  setFullName]  = useState("");
+  const [email,     setEmail]     = useState("");
+  const [password,  setPassword]  = useState("");
+  const [confirm,   setConfirm]   = useState("");
+  const [status,    setStatus]    = useState(null);   // null | loading | error | success
+  const [errMsg,    setErrMsg]    = useState("");
+  const [fieldErrs, setFieldErrs] = useState({});
 
-  // Redirect to dashboard when authenticated
+  // Email verification (after registration or unverified login)
+  const [verifCode,       setVerifCode]       = useState("");
+  const [resendStatus,    setResendStatus]    = useState(null);  // null | loading | sent | error
+  const [resendMsg,       setResendMsg]       = useState("");
+
+  // Forgot password modal
+  const [forgotOpen,    setForgotOpen]    = useState(false);
+  const [forgotEmail,   setForgotEmail]   = useState("");
+  const [forgotStep,    setForgotStep]    = useState("email"); // "email" | "code"
+  const [forgotCode,    setForgotCode]    = useState("");
+  const [forgotNewPwd,  setForgotNewPwd]  = useState("");
+  const [forgotStatus,  setForgotStatus]  = useState(null);
+  const [forgotMsg,     setForgotMsg]     = useState("");
+
+  // 2FA
+  const [tfaCode,   setTfaCode]   = useState("");
+  const [useBackup, setUseBackup] = useState(false);
+
+  const {
+    login, loginWith2FA, cancel2FA, register, verifyEmail, resendVerification,
+    forgotPassword, resetPassword,
+    isAuthenticated, pendingEmail, requires2FA,
+  } = useAuth();
+
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/", { replace: true });
-    }
+    if (isAuthenticated) navigate("/", { replace: true });
   }, [isAuthenticated, navigate]);
 
-  // Clear messages when switching tabs
   useEffect(() => {
-    setStatus(null);
-    setErrorMessage("");
-    setFieldErrors({});
+    setStatus(null); setErrMsg(""); setFieldErrs({});
   }, [tab]);
 
-  // Password recommendations (displayed as guidance, not enforced by backend)
-  const passwordRecs = [
-    { text: "At least 8 characters long", met: password.length >= 8 },
-    { text: "Contains uppercase and lowercase letters", met: /[A-Z]/.test(password) && /[a-z]/.test(password) },
-    { text: "Contains a number", met: /\d/.test(password) },
-    { text: "Contains a special character", met: /[!@#$%^&*(),.?":{}|<>]/.test(password) },
-  ];
-
-  // Frontend validation
-  function validateForm() {
-    const errors = {};
-
-    if (!email) {
-      errors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = "Please enter a valid email address";
-    }
-
-    if (!password) {
-      errors.password = "Password is required";
-    }
-
-    if (tab === "signup") {
-      if (!fullName) {
-        errors.fullName = "Full name is required";
-      } else if (fullName.trim().length < 2) {
-        errors.fullName = "Full name must be at least 2 characters";
-      }
-
-      if (!confirm) {
-        errors.confirm = "Please confirm your password";
-      } else if (password !== confirm) {
-        errors.confirm = "Passwords do not match";
-      }
-    }
-
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+  // ── Password policy ──────────────────────────────────────────────────────
+  function policyErrors(pwd) {
+    const e = [];
+    if (pwd.length < 8)                                e.push("at least 8 characters");
+    if (!/[A-Z]/.test(pwd))                            e.push("one uppercase letter");
+    if (!/[a-z]/.test(pwd))                            e.push("one lowercase letter");
+    if (!/[0-9]/.test(pwd))                            e.push("one number");
+    if (!/[!@#$%^&*()_+\-=[\]{}|;:,.<>/?]/.test(pwd)) e.push("one special character");
+    return e;
   }
 
-  async function handleLogin() {
-    if (!validateForm()) return;
+  // ── Validation ───────────────────────────────────────────────────────────
+  function validate() {
+    const e = {};
+    if (!email)                                          e.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid email";
+    if (!password)                                       e.password = "Password is required";
+    if (tab === "signup") {
+      if (!fullName)                                     e.fullName = "Full name is required";
+      else if (fullName.trim().length < 2)               e.fullName = "Name must be at least 2 characters";
+      if (password) {
+        const pe = policyErrors(password);
+        if (pe.length) e.password = `Must include: ${pe.join(", ")}`;
+      }
+      if (!confirm)                                      e.confirm = "Please confirm your password";
+      else if (password !== confirm)                     e.confirm  = "Passwords do not match";
+    }
+    setFieldErrs(e);
+    return Object.keys(e).length === 0;
+  }
 
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      await login(email, password);
-      setStatus("success");
-    } catch (e) {
-      setErrorMessage(e.message);
-      setStatus("error");
+  // ── Handlers ─────────────────────────────────────────────────────────────
+  async function handleLogin() {
+    if (!validate()) return;
+    setStatus("loading"); setErrMsg("");
+    try { await login(email, password); setStatus("success"); }
+    catch (err) {
+      // If account is unverified, AuthContext sets pendingEmail and the verify
+      // view takes over — don't show the error message here.
+      if (err.message && err.message.toLowerCase().includes("verify your email")) return;
+      setErrMsg(err.message); setStatus("error");
     }
   }
 
   async function handleRegister() {
-    if (!validateForm()) return;
+    if (!validate()) return;
+    setStatus("loading"); setErrMsg("");
+    try { await register(fullName, email, password); setStatus("success"); }
+    catch (err) { setErrMsg(err.message); setStatus("error"); }
+  }
 
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      await register(fullName, email, password);
-      setStatus("success");
-    } catch (e) {
-      setErrorMessage(e.message);
-      setStatus("error");
+  async function handleVerifyEmail() {
+    if (!verifCode || verifCode.length < 6) {
+      setErrMsg("Enter the 6-digit code from your email"); setStatus("error"); return;
     }
+    setStatus("loading"); setErrMsg("");
+    try { await verifyEmail(pendingEmail, verifCode); setStatus("success"); }
+    catch (err) { setErrMsg(err.message); setStatus("error"); }
+  }
+
+  async function handleResendCode() {
+    setResendStatus("loading"); setResendMsg("");
+    try {
+      await resendVerification(pendingEmail);
+      setResendStatus("sent"); setResendMsg("New code sent — check your email.");
+      setVerifCode(""); setStatus(null); setErrMsg("");
+    } catch (err) {
+      setResendStatus("error"); setResendMsg(err.message);
+    }
+  }
+
+  async function handleVerify2FA() {
+    if (!tfaCode) { setErrMsg("Enter a valid code"); setStatus("error"); return; }
+    setStatus("loading"); setErrMsg("");
+    try { await loginWith2FA(tfaCode, useBackup ? "backup" : "totp"); setStatus("success"); }
+    catch (err) { setErrMsg(err.message); setStatus("error"); }
+  }
+
+  async function handleForgotSendCode() {
+    if (!forgotEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) {
+      setForgotMsg("Enter a valid email"); return;
+    }
+    setForgotStatus("loading"); setForgotMsg("");
+    try {
+      await forgotPassword(forgotEmail);
+      setForgotStatus(null);
+      setForgotStep("code");
+    } catch (err) { setForgotMsg(err.message); setForgotStatus("error"); }
+  }
+
+  async function handleForgotReset() {
+    if (!forgotCode || forgotCode.length < 6) { setForgotMsg("Enter the 6-digit code from your email"); return; }
+    const pe = policyErrors(forgotNewPwd);
+    if (pe.length) { setForgotMsg(`Password must include: ${pe.join(", ")}`); return; }
+    setForgotStatus("loading"); setForgotMsg("");
+    try {
+      await resetPassword(forgotEmail, forgotCode, forgotNewPwd);
+      setForgotStatus("success");
+      setForgotMsg("Password reset! You can now sign in.");
+    } catch (err) { setForgotMsg(err.message); setForgotStatus("error"); }
+  }
+
+  function closeForgotModal() {
+    setForgotOpen(false); setForgotEmail(""); setForgotStep("email");
+    setForgotCode(""); setForgotNewPwd(""); setForgotStatus(null); setForgotMsg("");
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (tab === "login") {
-      handleLogin();
-    } else {
-      handleRegister();
-    }
+    tab === "login" ? handleLogin() : handleRegister();
   }
 
-  function PasswordField({ id, label, value, onChange, show, onToggleShow, error, placeholder }) {
+  const submitDisabled =
+    !email || !password ||
+    (tab === "signup" && (!fullName || password !== confirm)) ||
+    status === "loading";
+
+  // ── Email Verification View (after registration) ───────────────────────────
+  if (pendingEmail) {
     return (
-      <div>
-        <label style={styles.label}>{label}</label>
-        <div style={styles.passwordWrapper}>
-          <input
-            style={{ ...styles.input, ...(error && styles.inputError) }}
-            type={show ? "text" : "password"}
-            placeholder={placeholder || "Enter your password"}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            autoComplete={id}
-          />
-          <button
-            type="button"
-            style={styles.passwordToggle}
-            onClick={onToggleShow}
-            aria-label={show ? "Hide password" : "Show password"}
-          >
-            {show ? <IconEyeOff /> : <IconEye />}
-          </button>
+      <div style={styles.wrap}>
+        <div style={styles.card}>
+          <img src={logo} alt="HASAD" style={styles.logo} />
+          <h2 style={styles.title}>Check Your Email</h2>
+          <p style={styles.subtitle}>
+            We sent a 6-digit code to <strong>{pendingEmail}</strong>
+          </p>
+
+          <div style={{ marginTop: 14 }}>
+            <label style={styles.label}>Verification Code</label>
+            <input
+              style={{ ...styles.input, textAlign: "center", letterSpacing: 8, fontSize: 22, fontWeight: 700 }}
+              type="text"
+              inputMode="numeric"
+              placeholder="000000"
+              value={verifCode}
+              onChange={(e) => setVerifCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              autoFocus
+              onKeyDown={(e) => e.key === "Enter" && handleVerifyEmail()}
+            />
+
+            {status === "error"   && errMsg && <div style={styles.errBox}>{errMsg}</div>}
+            {status === "success" && <div style={styles.okBox}>Verified! Signing you in…</div>}
+            {resendStatus === "sent"  && <div style={styles.okBox}>{resendMsg}</div>}
+            {resendStatus === "error" && <div style={styles.errBox}>{resendMsg}</div>}
+
+            <button style={styles.primaryBtn} onClick={handleVerifyEmail} disabled={status === "loading"}>
+              {status === "loading" ? "Verifying…" : "Verify Email"}
+            </button>
+            <div style={{ textAlign: "center", marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={handleResendCode}
+                style={styles.linkBtn}
+                disabled={resendStatus === "loading"}
+              >
+                {resendStatus === "loading" ? "Sending…" : "Resend code"}
+              </button>
+            </div>
+          </div>
         </div>
-        {error && <div style={styles.errorText}>{error}</div>}
       </div>
     );
   }
 
-  const isFormDisabled = !email || !password || (tab === "signup" && (!fullName || password !== confirm));
-  const getSubmitButtonContent = () => {
-    if (status === "loading") {
-      return <span style={styles.submitContent}><IconSpinner /> Processing...</span>;
-    }
-    if (status === "success") {
-      return "Success";
-    }
-    if (tab === "login") return "Sign In";
-    return "Create Account";
-  };
-
-  return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        {/* Left Side - Branding */}
-        <div style={styles.branding}>
+  // ── 2FA View ──────────────────────────────────────────────────────────────
+  if (requires2FA) {
+    return (
+      <div style={styles.wrap}>
+        <div style={styles.card}>
           <img src={logo} alt="HASAD" style={styles.logo} />
-          <h1 style={styles.brandTitle}>HASAD</h1>
-          <p style={styles.brandTagline}>Smart Farming System</p>
+          <h2 style={styles.title}>Two-Factor Authentication</h2>
+          <p style={styles.subtitle}>Enter your authenticator code to continue</p>
 
-          <div style={styles.featureBox}>
-            {tab === "login" ? (
+          <div style={{ marginTop: 14 }}>
+            <div style={styles.tabs}>
+              <button
+                style={{ ...styles.tab, ...(useBackup ? {} : styles.tabActive) }}
+                onClick={() => setUseBackup(false)}
+              >Authenticator</button>
+              <button
+                style={{ ...styles.tab, ...(useBackup ? styles.tabActive : {}) }}
+                onClick={() => setUseBackup(true)}
+              >Backup Code</button>
+            </div>
+
+            <label style={styles.label}>Verification Code</label>
+            <input
+              style={{ ...styles.input, textAlign: "center", letterSpacing: 6, fontSize: 20 }}
+              type="text"
+              placeholder={useBackup ? "XXXX-XXXX" : "000000"}
+              value={tfaCode}
+              onChange={(e) => setTfaCode(e.target.value)}
+              maxLength={useBackup ? 9 : 6}
+              autoFocus
+              onKeyDown={(e) => e.key === "Enter" && handleVerify2FA()}
+            />
+
+            {status === "error" && errMsg && <div style={styles.errBox}>{errMsg}</div>}
+
+            <button style={styles.primaryBtn} onClick={handleVerify2FA} disabled={status === "loading"}>
+              {status === "loading" ? "Verifying…" : "Verify & Sign In"}
+            </button>
+            <button
+              style={{ ...styles.primaryBtn, ...styles.ghostBtn, marginTop: 8 }}
+              onClick={() => { cancel2FA(); setTfaCode(""); setUseBackup(false); setStatus(null); setErrMsg(""); }}
+              disabled={status === "loading"}
+            >Cancel</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main Auth View ────────────────────────────────────────────────────────
+  return (
+    <div style={styles.wrap}>
+      <div style={styles.card}>
+        <img src={logo} alt="HASAD" style={styles.logo} />
+        <h2 style={styles.title}>Welcome to HASAD</h2>
+        <p style={styles.subtitle}>Smart Agriculture Management Platform</p>
+
+        <div style={styles.tabs}>
+          <button
+            style={{ ...styles.tab, ...(tab === "login" ? styles.tabActive : {}) }}
+            onClick={() => setTab("login")}
+          >Login</button>
+          <button
+            style={{ ...styles.tab, ...(tab === "signup" ? styles.tabActive : {}) }}
+            onClick={() => setTab("signup")}
+          >Sign Up</button>
+        </div>
+
+        <form style={{ marginTop: 14 }} onSubmit={handleSubmit}>
+          {tab === "signup" && (
+            <>
+              <label style={styles.label}>Full Name</label>
+              <input
+                style={styles.input}
+                placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+              {fieldErrs.fullName && <p style={styles.fieldErr}>{fieldErrs.fullName}</p>}
+            </>
+          )}
+
+          <label style={styles.label}>Email</label>
+          <input
+            style={styles.input}
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          {fieldErrs.email && <p style={styles.fieldErr}>{fieldErrs.email}</p>}
+
+          <PasswordField
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            placeholder={tab === "login" ? "Enter your password" : "Create a strong password"}
+            error={fieldErrs.password}
+            disabled={status === "loading"}
+          />
+          {tab === "signup" && (
+            <p style={styles.hint}>Min 8 chars · uppercase · lowercase · number · special char</p>
+          )}
+
+          {tab === "signup" && (
+            <PasswordField
+              label="Confirm Password"
+              value={confirm}
+              onChange={setConfirm}
+              placeholder="Confirm your password"
+              error={fieldErrs.confirm}
+              disabled={status === "loading"}
+            />
+          )}
+
+          {status === "error" && errMsg && <div style={styles.errBox}>{errMsg}</div>}
+
+          <button type="submit" style={styles.primaryBtn} disabled={submitDisabled}>
+            {status === "loading"
+              ? "Processing…"
+              : tab === "login" ? "Login" : "Sign Up"}
+          </button>
+
+          {tab === "login" && (
+            <div style={{ textAlign: "center", marginTop: 10 }}>
+              <button type="button" onClick={() => setForgotOpen(true)} style={styles.linkBtn}>
+                Forgot password?
+              </button>
+            </div>
+          )}
+
+          {tab === "signup" && status === "success" && (
+            <div style={styles.okBox}>
+              Registration successful! Check your email for a verification code.
+            </div>
+          )}
+        </form>
+      </div>
+
+      {/* ── Forgot Password Modal ─────────────────────────────────────────── */}
+      {forgotOpen && (
+        <div style={styles.modalBg} onClick={closeForgotModal}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+
+            {forgotStep === "email" ? (
               <>
-                <div style={styles.featureItem}>
-                  <IconLock />
-                  <div>
-                    <strong style={styles.featureTitle}>Secure Access</strong>
-                    <p style={styles.featureText}>Access your farms and data with encrypted authentication</p>
-                  </div>
-                </div>
-                <div style={styles.featureItem}>
-                  <IconUser />
-                  <div>
-                    <strong style={styles.featureTitle}>Your Dashboard</strong>
-                    <p style={styles.featureText}>Monitor weather, irrigation, and disease risks in real-time</p>
-                  </div>
-                </div>
+                <h3 style={styles.modalTitle}>Reset Password</h3>
+                <p style={styles.modalSub}>Enter your email to receive a reset code.</p>
+                <label style={styles.label}>Email</label>
+                <input
+                  style={styles.input}
+                  type="email"
+                  placeholder="your@email.com"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && handleForgotSendCode()}
+                />
+                {forgotMsg && <div style={forgotStatus === "error" ? styles.errBox : styles.okBox}>{forgotMsg}</div>}
+                <button style={styles.primaryBtn} onClick={handleForgotSendCode} disabled={forgotStatus === "loading"}>
+                  {forgotStatus === "loading" ? "Sending…" : "Send Reset Code"}
+                </button>
+                <button style={{ ...styles.primaryBtn, ...styles.ghostBtn, marginTop: 8 }} onClick={closeForgotModal}>
+                  Cancel
+                </button>
+              </>
+            ) : forgotStatus === "success" ? (
+              <>
+                <h3 style={styles.modalTitle}>Password Reset</h3>
+                <div style={styles.okBox}>{forgotMsg}</div>
+                <button style={{ ...styles.primaryBtn, marginTop: 14 }} onClick={closeForgotModal}>
+                  Sign In
+                </button>
               </>
             ) : (
               <>
-                <div style={styles.featureItem}>
-                  <IconLock />
-                  <div>
-                    <strong style={styles.featureTitle}>Create Account</strong>
-                    <p style={styles.featureText}>Join thousands of farmers optimizing their operations</p>
-                  </div>
-                </div>
-                <div style={styles.featureItem}>
-                  <IconUser />
-                  <div>
-                    <strong style={styles.featureTitle}>Get Started Free</strong>
-                    <p style={styles.featureText}>No credit card required. Start managing your farm today</p>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Right Side - Auth Form */}
-        <div style={styles.formSection}>
-          {/* Tabs */}
-          <div style={styles.tabs}>
-            <button
-              style={tab === "login" ? { ...styles.tab, ...styles.tabActive } : styles.tab}
-              onClick={() => setTab("login")}
-            >
-              Login
-            </button>
-            <button
-              style={tab === "signup" ? { ...styles.tab, ...styles.tabActive } : styles.tab}
-              onClick={() => setTab("signup")}
-            >
-              Sign Up
-            </button>
-          </div>
-
-          {/* Form */}
-          <form style={styles.form} onSubmit={handleSubmit}>
-            {tab === "signup" && (
-              <>
-                <label style={styles.label}>Full Name</label>
+                <h3 style={styles.modalTitle}>Enter Reset Code</h3>
+                <p style={styles.modalSub}>
+                  We sent a 6-digit code to <strong>{forgotEmail}</strong>
+                </p>
+                <label style={styles.label}>Reset Code</label>
                 <input
-                  style={{ ...styles.input, ...(fieldErrors.fullName && styles.inputError) }}
-                  placeholder="Enter your full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  autoComplete="name"
+                  style={{ ...styles.input, textAlign: "center", letterSpacing: 8, fontSize: 22, fontWeight: 700 }}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="000000"
+                  value={forgotCode}
+                  onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  autoFocus
                 />
-                {fieldErrors.fullName && <div style={styles.errorText}>{fieldErrors.fullName}</div>}
-              </>
-            )}
-
-            <label style={styles.label}>Email Address</label>
-            <input
-              style={{ ...styles.input, ...(fieldErrors.email && styles.inputError) }}
-              type="email"
-              placeholder="your.email@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete={tab === "login" ? "email" : "username"}
-            />
-            {fieldErrors.email && <div style={styles.errorText}>{fieldErrors.email}</div>}
-
-            <PasswordField
-              id={tab === "login" ? "current-password" : "new-password"}
-              label="Password"
-              value={password}
-              onChange={setPassword}
-              show={showPassword}
-              onToggleShow={() => setShowPassword(!showPassword)}
-              error={fieldErrors.password}
-              placeholder={tab === "login" ? "Enter your password" : "Create a password"}
-            />
-
-            {tab === "signup" && (
-              <>
                 <PasswordField
-                  id="confirm-password"
-                  label="Confirm Password"
-                  value={confirm}
-                  onChange={setConfirm}
-                  show={showConfirm}
-                  onToggleShow={() => setShowConfirm(!showConfirm)}
-                  error={fieldErrors.confirm}
-                  placeholder="Re-enter your password"
+                  label="New Password"
+                  value={forgotNewPwd}
+                  onChange={setForgotNewPwd}
+                  placeholder="Create a strong password"
+                  disabled={forgotStatus === "loading"}
                 />
-
-                {/* Password Recommendations */}
-                <div style={styles.passwordRecs}>
-                  <div style={styles.passwordRecsHeader}>
-                    <IconInfo />
-                    <span>Password Recommendations</span>
-                  </div>
-                  <div style={styles.passwordRecsList}>
-                    {passwordRecs.map((rec, idx) => (
-                      <div key={idx} style={styles.passwordRecItem}>
-                        <IconCheck
-                          size={14}
-                          style={{ color: rec.met ? "#16A34A" : "rgba(0,0,0,0.2)" }}
-                        />
-                        <span style={rec.met ? styles.recMet : styles.recNotMet}>{rec.text}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <p style={styles.hint}>Min 8 chars · uppercase · lowercase · number · special char</p>
+                {forgotMsg && <div style={forgotStatus === "error" ? styles.errBox : styles.okBox}>{forgotMsg}</div>}
+                <button style={styles.primaryBtn} onClick={handleForgotReset} disabled={forgotStatus === "loading"}>
+                  {forgotStatus === "loading" ? "Resetting…" : "Reset Password"}
+                </button>
+                <button
+                  style={{ ...styles.primaryBtn, ...styles.ghostBtn, marginTop: 8 }}
+                  onClick={() => { setForgotStep("email"); setForgotCode(""); setForgotNewPwd(""); setForgotMsg(""); setForgotStatus(null); }}
+                  disabled={forgotStatus === "loading"}
+                >Back</button>
               </>
             )}
-
-            {/* Error Message Display */}
-            {status === "error" && errorMessage && (
-              <div style={styles.formError}>
-                <IconAlert size={20} />
-                <span>{errorMessage}</span>
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              style={{
-                ...styles.submitBtn,
-                ...(status === "loading" && styles.submitBtnLoading),
-              }}
-              type="submit"
-              disabled={isFormDisabled || status === "loading"}
-            >
-              {getSubmitButtonContent()}
-            </button>
-
-            {/* Forgot Password */}
-            {tab === "login" && (
-              <button
-                type="button"
-                style={styles.forgotLink}
-                onClick={() => setShowForgotModal(true)}
-                disabled={status === "loading"}
-              >
-                Forgot password?
-              </button>
-            )}
-          </form>
-        </div>
-      </div>
-
-      {/* Forgot Password Modal (Placeholder - Not Implemented) */}
-      {showForgotModal && (
-        <div style={styles.modalOverlay} onClick={() => setShowForgotModal(false)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>Password Reset</h2>
-              <button
-                type="button"
-                style={styles.modalClose}
-                onClick={() => setShowForgotModal(false)}
-                aria-label="Close modal"
-              >
-                <IconClose />
-              </button>
-            </div>
-            <div style={styles.modalContent}>
-              <div style={styles.modalIcon}>
-                <IconAlert size={48} />
-              </div>
-              <p style={styles.modalText}>
-                Password reset functionality is not yet available.
-              </p>
-              <p style={styles.modalSubtext}>
-                For password assistance, please contact your system administrator or support team.
-              </p>
-            </div>
-            <div style={styles.modalFooter}>
-              <button
-                type="button"
-                style={styles.modalBtn}
-                onClick={() => setShowForgotModal(false)}
-              >
-                Close
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -437,364 +462,64 @@ export default function Auth() {
 }
 
 const styles = {
-  page: {
+  wrap: {
     minHeight: "100vh",
     display: "grid",
     placeItems: "center",
-    padding: "24px",
+    padding: 24,
     background:
-      "radial-gradient(600px circle at 50% 20%, rgba(22,163,74,0.08), transparent 55%), linear-gradient(180deg, #F8FAFC 0%, #ECFDF5 100%)",
+      "radial-gradient(600px circle at 50% 20%, rgba(22,163,74,0.12), transparent 55%), linear-gradient(180deg, #F7FBFA 0%, #ECF7F1 100%)",
   },
-
-  container: {
-    display: "grid",
-    gridTemplateColumns: "1fr 480px",
-    gap: "0",
-    maxWidth: "1200px",
-    width: "100%",
-    background: "white",
-    borderRadius: "20px",
-    boxShadow: "0 20px 60px rgba(15,23,42,0.08)",
-    overflow: "hidden",
+  card: {
+    width: 440,
+    maxWidth: "100%",
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius)",
+    boxShadow: "var(--shadow)",
+    padding: "26px 26px 18px",
+    textAlign: "center",
   },
-
-  branding: {
-    padding: "48px",
-    background: "linear-gradient(135deg, #064E3B 0%, #0F766E 100%)",
-    display: "flex",
-    flexDirection: "column",
-  },
-
-  logo: {
-    width: "180px",
-    height: "auto",
-    objectFit: "contain",
-    marginBottom: "24px",
-    filter: "brightness(0) invert(1)",
-  },
-
-  brandTitle: {
-    fontSize: "36px",
-    fontWeight: 900,
-    color: "white",
-    margin: "0 0 8px 0",
-    letterSpacing: "-1px",
-  },
-
-  brandTagline: {
-    fontSize: "15px",
-    color: "rgba(255,255,255,0.7)",
-    margin: "0 0 40px 0",
-    fontWeight: 500,
-  },
-
-  featureBox: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "32px",
-  },
-
-  featureItem: {
-    display: "flex",
-    gap: "16px",
-    alignItems: "flex-start",
-  },
-
-  featureTitle: {
-    display: "block",
-    fontSize: "17px",
-    fontWeight: 700,
-    color: "white",
-    marginBottom: "6px",
-  },
-
-  featureText: {
-    fontSize: "14px",
-    color: "rgba(255,255,255,0.7)",
-    lineHeight: 1.6,
-    margin: 0,
-  },
-
-  formSection: {
-    padding: "48px",
-    display: "flex",
-    flexDirection: "column",
-  },
+  logo:     { width: "clamp(120px, 20vw, 180px)", height: "auto", objectFit: "contain", marginBottom: 16 },
+  title:    { margin: "6px 0 4px", fontSize: 22 },
+  subtitle: { margin: 0, color: "var(--muted)", fontSize: 13 },
 
   tabs: {
-    display: "flex",
+    marginTop: 16,
     background: "#F1F5F9",
-    borderRadius: "12px",
-    padding: "4px",
-    marginBottom: "28px",
-    gap: "4px",
+    borderRadius: 999,
+    padding: 4,
+    display: "flex",
+    gap: 4,
   },
-
   tab: {
     flex: 1,
-    padding: "12px 16px",
-    borderRadius: "10px",
-    border: "none",
+    border: 0,
     background: "transparent",
+    padding: "10px 12px",
+    borderRadius: 999,
     cursor: "pointer",
-    fontSize: "14px",
+    color: "var(--muted)",
     fontWeight: 700,
-    color: "rgba(15,23,42,0.6)",
-    transition: "all 0.2s",
   },
-
   tabActive: {
     background: "white",
-    color: "#0F766E",
-    boxShadow: "0 2px 8px rgba(15,118,110,0.1)",
+    color: "var(--hasad-primary)",
+    boxShadow: "0 6px 16px rgba(0,0,0,0.08)",
   },
 
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "18px",
-  },
-
-  label: {
-    display: "block",
-    fontSize: "13px",
-    fontWeight: 700,
-    color: "rgba(15,23,42,0.8)",
-    marginBottom: "6px",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-  },
-
-  input: {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: "12px",
-    border: "1.5px solid #E2E8F0",
-    fontSize: "15px",
-    fontWeight: 500,
-    outline: "none",
-    transition: "all 0.2s",
-    background: "#F8FAFC",
-  },
-
-  inputError: {
-    borderColor: "#DC2626",
-    background: "#FEF2F2",
-  },
-
-  errorText: {
-    fontSize: "12px",
-    color: "#DC2626",
-    marginTop: "4px",
-    fontWeight: 600,
-  },
-
-  formError: {
-    background: "#FEF2F2",
-    border: "1px solid #FCA5A5",
-    borderRadius: "10px",
-    padding: "12px 16px",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    fontSize: "14px",
-    color: "#B91C1C",
-    fontWeight: 600,
-  },
-
-  passwordWrapper: {
-    position: "relative",
-    display: "flex",
-  },
-
-  passwordToggle: {
-    position: "absolute",
-    right: "12px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    color: "rgba(15,23,42,0.4)",
-    padding: "4px",
-    display: "grid",
-    placeItems: "center",
-    transition: "color 0.2s",
-  },
-
-  passwordRecs: {
-    background: "#F0FDF9",
-    border: "1px solid #BBF7D0",
-    borderRadius: "12px",
-    padding: "16px",
-  },
-
-  passwordRecsHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "12px",
-    fontWeight: 700,
-    color: "#15803D",
-    marginBottom: "12px",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-  },
-
-  passwordRecsList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-  },
-
-  passwordRecItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    fontSize: "13px",
-  },
-
-  recMet: {
-    color: "#15803D",
-    fontWeight: 600,
-  },
-
-  recNotMet: {
-    color: "rgba(15,23,42,0.5)",
-  },
-
-  submitBtn: {
-    width: "100%",
-    padding: "16px",
-    borderRadius: "12px",
-    border: "none",
-    background: "#0F766E",
-    color: "white",
-    fontSize: "16px",
-    fontWeight: 800,
-    cursor: "pointer",
-    transition: "all 0.2s",
-    marginTop: "8px",
-  },
-
-  submitBtnLoading: {
-    opacity: 0.8,
-    cursor: "wait",
-  },
-
-  submitContent: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-  },
-
-  forgotLink: {
-    marginTop: "12px",
-    padding: "8px 16px",
-    background: "none",
-    border: "none",
-    color: "#0F766E",
-    fontSize: "13px",
-    fontWeight: 700,
-    cursor: "pointer",
-    textDecoration: "underline",
-    alignSelf: "center",
-    transition: "opacity 0.2s",
-    opacity: (val) => (!val ? 0.5 : 1),
-  },
-
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(15,23,42,0.6)",
-    display: "grid",
-    placeItems: "center",
-    zIndex: 1000,
-  },
-
-  modal: {
-    background: "white",
-    borderRadius: "20px",
-    padding: "32px",
-    width: "100%",
-    maxWidth: "420px",
-    boxShadow: "0 25px 50px rgba(15,23,42,0.15)",
-  },
-
-  modalHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "24px",
-  },
-
-  modalTitle: {
-    margin: 0,
-    fontSize: "20px",
-    fontWeight: 800,
-    color: "#0F172A",
-  },
-
-  modalClose: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    color: "rgba(15,23,42,0.4)",
-    padding: "4px",
-    transition: "color 0.2s",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  modalContent: {
-    textAlign: "center",
-    marginBottom: "24px",
-  },
-
-  modalIcon: {
-    color: "#F59E0B",
-    marginBottom: "16px",
-    display: "flex",
-    justifyContent: "center",
-  },
-
-  modalText: {
-    fontSize: "16px",
-    fontWeight: 600,
-    color: "#0F172A",
-    margin: "0 0 8px 0",
-  },
-
-  modalSubtext: {
-    fontSize: "14px",
-    color: "rgba(15,23,42,0.6)",
-    lineHeight: 1.6,
-    margin: 0,
-  },
-
-  modalFooter: {
-    display: "flex",
-    justifyContent: "center",
-  },
-
-  modalBtn: {
-    padding: "12px 32px",
-    borderRadius: "10px",
-    border: "none",
-    background: "#0F766E",
-    color: "white",
-    fontSize: "14px",
-    fontWeight: 800,
-    cursor: "pointer",
-  },
+  label:    { display: "block", textAlign: "left", margin: "12px 0 6px", fontSize: 12, color: "var(--muted)" },
+  input:    { width: "100%", padding: "12px 12px", borderRadius: 12, border: "1px solid var(--border)", outline: "none", background: "#F8FAFC", boxSizing: "border-box" },
+  primaryBtn: { width: "100%", marginTop: 14, padding: "12px 12px", borderRadius: 12, border: 0, cursor: "pointer", background: "var(--hasad-primary)", color: "white", fontWeight: 800 },
+  ghostBtn:   { background: "transparent", color: "var(--muted)", border: "1px solid var(--border)", fontWeight: 600 },
+  hint:       { margin: "4px 0 0", fontSize: 11, color: "var(--muted)", textAlign: "left" },
+  fieldErr:   { margin: "4px 0 0", fontSize: 11, color: "#DC2626", textAlign: "left" },
+  errBox:     { marginTop: 10, padding: "10px 12px", borderRadius: 8, background: "#FEF2F2", color: "#DC2626", fontSize: 13, textAlign: "left" },
+  okBox:      { marginTop: 10, padding: "10px 12px", borderRadius: 8, background: "#F0FDF4", color: "#16A34A", fontSize: 13, textAlign: "left" },
+  eyeBtn:     { position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: 4, color: "var(--muted)" },
+  linkBtn:    { background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--muted)", textDecoration: "underline", padding: 0 },
+  modalBg:    { position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 24 },
+  modal:      { background: "var(--surface)", borderRadius: "var(--radius)", padding: 24, width: 380, maxWidth: "100%", boxShadow: "var(--shadow)" },
+  modalTitle: { margin: "0 0 6px", fontSize: 16 },
+  modalSub:   { margin: "0 0 14px", fontSize: 13, color: "var(--muted)" },
 };
-
-// Responsive adjustments
-const mobileStyles = `
-  @media (max-width: 900px) {
-    body { background: white; }
-  }
-`;

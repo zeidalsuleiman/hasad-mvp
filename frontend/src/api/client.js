@@ -51,42 +51,38 @@ export const api = {
   base: BASE,
   apiBase: API_BASE,
 
-  getToken() {
-    return localStorage.getItem(TOKEN_KEY) || "";
-  },
-
+  getToken() { return localStorage.getItem(TOKEN_KEY) || ""; },
   setToken(token) {
-    if (!token) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-    } else {
-      localStorage.setItem(TOKEN_KEY, token);
-    }
+    if (!token) { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); }
+    else { localStorage.setItem(TOKEN_KEY, token); }
   },
-
   setUser(user) {
-    if (!user) {
-      localStorage.removeItem(USER_KEY);
-    } else {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-    }
+    if (!user) { localStorage.removeItem(USER_KEY); }
+    else { localStorage.setItem(USER_KEY, JSON.stringify(user)); }
   },
-
   getUser() {
-    const userStr = localStorage.getItem(USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    const s = localStorage.getItem(USER_KEY);
+    return s ? JSON.parse(s) : null;
   },
-
   logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   },
 
-  // Auth endpoints
+  // Auth
   async register(fullName, email, password) {
-    const data = await request("/auth/register", {
+    // Returns { requires_verification: true, email, message }
+    // Does NOT set token — user must verify email first
+    return request("/auth/register", {
       method: "POST",
       body: { full_name: fullName, email, password },
+    });
+  },
+
+  async verifyEmail(email, code) {
+    const data = await request("/auth/verify-email", {
+      method: "POST",
+      body: { email, code },
     });
     if (data.access_token && data.user) {
       api.setToken(data.access_token);
@@ -100,83 +96,91 @@ export const api = {
       method: "POST",
       body: { email, password },
     });
-    if (data.access_token && data.user) {
+    // If requires_2fa, don't set token yet
+    if (data.access_token && data.user && !data.requires_2fa) {
       api.setToken(data.access_token);
       api.setUser(data.user);
     }
     return data;
   },
 
-  async getMe() {
-    return request("/auth/me");
-  },
-
-  // Farm endpoints
-  async getFarms() {
-    return request("/farms");
-  },
-
-  async createFarm(farmData) {
-    return request("/farms", { method: "POST", body: farmData });
-  },
-
-  async getFarm(farmId) {
-    return request(`/farms/${farmId}`);
-  },
-
-  async updateFarm(farmId, farmData) {
-    return request(`/farms/${farmId}`, { method: "PATCH", body: farmData });
-  },
-
-  async deleteFarm(farmId) {
-    return request(`/farms/${farmId}`, { method: "DELETE" });
-  },
-
-  // Crop endpoints
-  async getFarmCrop(farmId) {
-    return request(`/farms/${farmId}/crop`);
-  },
-
-  async createFarmCrop(farmId, cropData) {
-    return request(`/farms/${farmId}/crop`, { method: "POST", body: cropData });
-  },
-
-  async updateFarmCrop(farmId, cropData) {
-    return request(`/farms/${farmId}/crop`, { method: "PATCH", body: cropData });
-  },
-
-  // Weather endpoints
-  async getCurrentWeather(farmId) {
-    return request(`/farms/${farmId}/weather/current`);
-  },
-
-  async getWeatherHistory(farmId, limit = 100) {
-    return request(`/farms/${farmId}/weather/history?limit=${limit}`);
-  },
-
-  // Irrigation endpoints
-  async calculateIrrigation(farmId) {
-    return request(`/farms/${farmId}/irrigation/calculate`, { method: "POST" });
-  },
-
-  async getIrrigationHistory(farmId, limit = 100) {
-    return request(`/farms/${farmId}/irrigation/history?limit=${limit}`);
-  },
-
-  // Disease risk endpoints
-  async calculateDiseaseRisk(farmId) {
-    return request(`/farms/${farmId}/disease-risk/calculate`, { method: "POST" });
-  },
-
-  async getDiseaseRiskHistory(farmId, limit = 100) {
-    return request(`/farms/${farmId}/disease-risk/history?limit=${limit}`);
-  },
-
-  // Assistant endpoint
-  async chat(farmId, message) {
-    return request("/assistant/chat", {
+  async loginWith2FA(email, password, code, codeType = "totp") {
+    const data = await request("/auth/login/2fa", {
       method: "POST",
-      body: { farm_id: farmId, message },
+      body: {
+        email,
+        password,
+        [codeType === "totp" ? "totp_code" : "backup_code"]: code,
+      },
     });
+    if (data.access_token) {
+      api.setToken(data.access_token);
+      const user = await api.getMe();
+      api.setUser(user);
+    }
+    return data;
+  },
+
+  async getMe() { return request("/auth/me"); },
+
+  async resendVerification(email) {
+    return request("/auth/resend-verification", { method: "POST", body: { email } });
+  },
+
+  async forgotPassword(email) {
+    return request("/auth/forgot-password", { method: "POST", body: { email } });
+  },
+
+  // email + code + newPassword (no manual token paste)
+  async resetPassword(email, code, newPassword) {
+    return request("/auth/reset-password", {
+      method: "POST",
+      body: { email, code, new_password: newPassword },
+    });
+  },
+
+  // 2FA
+  async get2FAStatus()  { return request("/auth/2fa/status"); },
+  async setup2FA()      { return request("/auth/2fa/setup", { method: "POST" }); },
+  async enable2FA(secret, code) {
+    return request("/auth/2fa/enable", { method: "POST", body: { totp_secret: secret, verification_code: code } });
+  },
+  async disable2FA(password) {
+    return request("/auth/2fa/disable", { method: "POST", body: { password } });
+  },
+  async verify2FA(code) {
+    return request("/auth/2fa/verify", { method: "POST", body: { code } });
+  },
+  async regenerateBackupCodes(password) {
+    return request("/auth/2fa/regenerate-backup-codes", { method: "POST", body: { password } });
+  },
+
+  // Farms
+  async getFarms()              { return request("/farms"); },
+  async createFarm(farmData)    { return request("/farms", { method: "POST", body: farmData }); },
+  async getFarm(id)             { return request(`/farms/${id}`); },
+  async updateFarm(id, data)    { return request(`/farms/${id}`, { method: "PATCH", body: data }); },
+  async deleteFarm(id)          { return request(`/farms/${id}`, { method: "DELETE" }); },
+
+  // Crops
+  async getFarmCrop(id)         { return request(`/farms/${id}/crop`); },
+  async createFarmCrop(id, d)   { return request(`/farms/${id}/crop`, { method: "POST", body: d }); },
+  async updateFarmCrop(id, d)   { return request(`/farms/${id}/crop`, { method: "PATCH", body: d }); },
+
+  // Weather
+  async getCurrentWeather(id)   { return request(`/farms/${id}/weather/current`); },
+  async getWeatherHistory(id, limit = 100) { return request(`/farms/${id}/weather/history?limit=${limit}`); },
+
+  // Irrigation
+  async calculateIrrigation(id) { return request(`/farms/${id}/irrigation/calculate`, { method: "POST" }); },
+  async getIrrigationHistory(id, limit = 100) { return request(`/farms/${id}/irrigation/history?limit=${limit}`); },
+
+  // Disease risk
+  async calculateDiseaseRisk(id) { return request(`/farms/${id}/disease-risk/calculate`, { method: "POST" }); },
+  async getDiseaseRiskHistory(id, limit = 100) { return request(`/farms/${id}/disease-risk/history?limit=${limit}`); },
+
+  // Assistant
+  async chat(farmId, message) {
+    return request("/assistant/chat", { method: "POST", body: { farm_id: farmId, message } });
   },
 };
