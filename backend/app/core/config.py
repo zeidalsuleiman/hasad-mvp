@@ -38,9 +38,21 @@ class Settings(BaseSettings):
     smtp_from: str = "noreply@hasad.app"
     smtp_tls: bool = True
 
+    @property
+    def smtp_password_clean(self) -> Optional[str]:
+        """Return SMTP password with whitespace stripped.
+
+        Gmail App Passwords are displayed as 'xxxx xxxx xxxx xxxx' but must be
+        submitted without spaces.  Users often copy-paste the spaced form into
+        .env, so we normalise it here rather than silently failing auth.
+        """
+        if self.smtp_password is None:
+            return None
+        return self.smtp_password.replace(" ", "")
+
     # External APIs
     openweather_api_key: Optional[str] = None
-    anthropic_api_key: Optional[str] = None
+    groq_api_key: Optional[str] = None
 
     class Config:
         env_file = ".env"

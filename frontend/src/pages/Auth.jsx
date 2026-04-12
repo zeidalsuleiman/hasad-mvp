@@ -3,6 +3,47 @@ import { useNavigate } from "react-router-dom";
 import logo from "../assets/hasad-logo.png";
 import { useAuth } from "../contexts/AuthContext";
 
+const EyeOpen = () => (
+  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+);
+
+const EyeOff = () => (
+  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+    <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+);
+
+// ─── Password policy rules ────────────────────────────────────────────────────
+const POLICY = [
+  { label: "At least 8 characters",  test: (p) => p.length >= 8 },
+  { label: "Uppercase letter",        test: (p) => /[A-Z]/.test(p) },
+  { label: "Lowercase letter",        test: (p) => /[a-z]/.test(p) },
+  { label: "Number",                  test: (p) => /[0-9]/.test(p) },
+  { label: "Special character",       test: (p) => /[!@#$%^&*()_+\-=[\]{}|;:,.<>/?]/.test(p) },
+];
+
+function PasswordChecklist({ password }) {
+  return (
+    <ul style={styles.policyList}>
+      {POLICY.map(({ label, test }) => {
+        const active = password.length > 0;
+        const met    = active && test(password);
+        return (
+          <li key={label} style={{ ...styles.policyItem, color: met ? "#16A34A" : active ? "#DC2626" : "var(--muted)" }}>
+            <span style={styles.policyMark}>{met ? "✓" : active ? "✗" : "·"}</span>
+            {label}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 // ─── PasswordField — module level to prevent remount/focus loss ───────────────
 function PasswordField({ label, value, onChange, placeholder, error, disabled = false }) {
   const [show, setShow] = useState(false);
@@ -26,7 +67,7 @@ function PasswordField({ label, value, onChange, placeholder, error, disabled = 
           tabIndex={-1}
           aria-label={show ? "Hide password" : "Show password"}
         >
-          {show ? "🙈" : "👁"}
+          {show ? <EyeOff /> : <EyeOpen />}
         </button>
       </div>
       {error && <p style={styles.fieldErr}>{error}</p>}
@@ -102,7 +143,7 @@ export default function Auth() {
       else if (fullName.trim().length < 2)               e.fullName = "Name must be at least 2 characters";
       if (password) {
         const pe = policyErrors(password);
-        if (pe.length) e.password = `Must include: ${pe.join(", ")}`;
+        if (pe.length) e.password = ""; // checklist shows details; empty blocks submit without printing text
       }
       if (!confirm)                                      e.confirm = "Please confirm your password";
       else if (password !== confirm)                     e.confirm  = "Passwords do not match";
@@ -194,7 +235,7 @@ export default function Auth() {
 
   const submitDisabled =
     !email || !password ||
-    (tab === "signup" && (!fullName || password !== confirm)) ||
+    (tab === "signup" && !fullName) ||
     status === "loading";
 
   // ── Email Verification View (after registration) ───────────────────────────
@@ -345,9 +386,7 @@ export default function Auth() {
             error={fieldErrs.password}
             disabled={status === "loading"}
           />
-          {tab === "signup" && (
-            <p style={styles.hint}>Min 8 chars · uppercase · lowercase · number · special char</p>
-          )}
+          {tab === "signup" && <PasswordChecklist password={password} />}
 
           {tab === "signup" && (
             <PasswordField
@@ -513,6 +552,9 @@ const styles = {
   primaryBtn: { width: "100%", marginTop: 14, padding: "12px 12px", borderRadius: 12, border: 0, cursor: "pointer", background: "var(--hasad-primary)", color: "white", fontWeight: 800 },
   ghostBtn:   { background: "transparent", color: "var(--muted)", border: "1px solid var(--border)", fontWeight: 600 },
   hint:       { margin: "4px 0 0", fontSize: 11, color: "var(--muted)", textAlign: "left" },
+  policyList: { margin: "6px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 3 },
+  policyItem: { fontSize: 11, textAlign: "left", display: "flex", alignItems: "center", gap: 5, fontWeight: 600, transition: "color 0.2s" },
+  policyMark: { fontSize: 12, lineHeight: 1, minWidth: 12, textAlign: "center", fontWeight: 700 },
   fieldErr:   { margin: "4px 0 0", fontSize: 11, color: "#DC2626", textAlign: "left" },
   errBox:     { marginTop: 10, padding: "10px 12px", borderRadius: 8, background: "#FEF2F2", color: "#DC2626", fontSize: 13, textAlign: "left" },
   okBox:      { marginTop: 10, padding: "10px 12px", borderRadius: 8, background: "#F0FDF4", color: "#16A34A", fontSize: 13, textAlign: "left" },

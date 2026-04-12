@@ -87,12 +87,37 @@ def test_crop_data():
     }
 
 
+def _make_verified_user(db_session, full_name: str, email: str, password: str) -> str:
+    """
+    Create a pre-verified user directly in the DB and return a JWT token.
+    Bypasses the email-OTP flow that registration requires.
+    """
+    from app.core.security import get_password_hash, create_access_token
+    from datetime import datetime, timezone
+
+    user = User(
+        full_name=full_name,
+        email=email,
+        password_hash=get_password_hash(password),
+        is_verified=True,
+        email_verified_at=datetime.now(timezone.utc),
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return create_access_token(data={"sub": str(user.id)})
+
+
 @pytest.fixture
-def authenticated_user_response(client, test_user_data):
-    """Create and authenticate a test user, return full response."""
-    response = client.post("/api/v1/auth/register", json=test_user_data)
-    assert response.status_code == 201
-    return response.json()
+def authenticated_user_response(client, db_session, test_user_data):
+    """Create a pre-verified test user and return a token dict."""
+    token = _make_verified_user(
+        db_session,
+        full_name=test_user_data["full_name"],
+        email=test_user_data["email"],
+        password=test_user_data["password"],
+    )
+    return {"access_token": token}
 
 
 @pytest.fixture
@@ -102,17 +127,14 @@ def authenticated_user(authenticated_user_response):
 
 
 @pytest.fixture
-def authenticated_user_2(client):
-    """Create and authenticate a second test user."""
-    user_data = {
-        "full_name": "Second Farmer",
-        "email": "second@example.com",
-        "password": "SecurePass456!",
-    }
-    response = client.post("/api/v1/auth/register", json=user_data)
-    assert response.status_code == 201
-    data = response.json()
-    return data["access_token"]
+def authenticated_user_2(client, db_session):
+    """Create and authenticate a second pre-verified test user."""
+    return _make_verified_user(
+        db_session,
+        full_name="Second Farmer",
+        email="second@example.com",
+        password="SecurePass456!",
+    )
 
 
 @pytest.fixture

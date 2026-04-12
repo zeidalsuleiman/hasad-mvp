@@ -40,17 +40,42 @@ class WeatherService:
 
     @staticmethod
     def parse_weather_data(raw_data: dict) -> dict:
-        """Parse weather data from API response."""
+        """
+        Parse weather data from OWM current-weather API response (/data/2.5/weather).
+
+        Provider-supplied values (stored directly as received):
+        - temperature_c    OWM: main.temp
+        - temp_max_c       OWM: main.temp_max  (city-wide snapshot, not true daily max)
+        - temp_min_c       OWM: main.temp_min  (city-wide snapshot, not true daily min)
+        - humidity_pct     OWM: main.humidity
+        - wind_speed_mps   OWM: wind.speed
+        - pressure_hpa     OWM: main.pressure  (used directly in PM, avoids need for elevation_m)
+        - rainfall_mm      OWM: rain.1h  (last-hour precipitation)
+        - cloud_pct        OWM: clouds.all
+        - weather_description OWM: weather[0].description
+
+        Null from current provider (requires upgrade to OWM One Call API):
+        - dew_point_c      Not present in /data/2.5/weather free-tier response.
+                           Phase 3 PM engine will derive it from humidity when null.
+                           Do NOT estimate and store here — keep provider vs. derived separate.
+
+        Note: temp_max_c / temp_min_c from OWM snapshot are useful for Hargreaves
+        temperature-range approximation but are NOT true 24-hour extremes.
+        Phase 3 may supplement with forecast data for better diurnal range.
+        """
+        main = raw_data.get("main", {})
         return {
-            "temperature_c": raw_data.get("main", {}).get("temp"),
-            "humidity_pct": raw_data.get("main", {}).get("humidity"),
+            # Core fields
+            "temperature_c": main.get("temp"),
+            "temp_max_c": main.get("temp_max"),      # provider-supplied, may be close to temp_c on overcast days
+            "temp_min_c": main.get("temp_min"),      # provider-supplied
+            "humidity_pct": main.get("humidity"),
+            "dew_point_c": None,                     # not in OWM free-tier /data/2.5/weather
             "wind_speed_mps": raw_data.get("wind", {}).get("speed"),
-            "pressure_hpa": raw_data.get("main", {}).get("pressure"),
+            "pressure_hpa": main.get("pressure"),
             "rainfall_mm": raw_data.get("rain", {}).get("1h", 0),
             "cloud_pct": raw_data.get("clouds", {}).get("all"),
-            "weather_description": (
-                raw_data.get("weather") or [{}]
-            )[0].get("description"),
+            "weather_description": (raw_data.get("weather") or [{}])[0].get("description"),
         }
 
     @staticmethod
@@ -73,7 +98,10 @@ class WeatherService:
             source=WeatherService.WEATHER_SOURCE,
             observed_at=datetime.utcnow(),
             temperature_c=weather_data.get("temperature_c"),
+            temp_max_c=weather_data.get("temp_max_c"),
+            temp_min_c=weather_data.get("temp_min_c"),
             humidity_pct=weather_data.get("humidity_pct"),
+            dew_point_c=weather_data.get("dew_point_c"),  # NULL for OWM free-tier
             wind_speed_mps=weather_data.get("wind_speed_mps"),
             pressure_hpa=weather_data.get("pressure_hpa"),
             rainfall_mm=weather_data.get("rainfall_mm"),

@@ -15,7 +15,11 @@ class IrrigationCalculateResponse(BaseModel):
     effective_rainfall_mm: Optional[float] = Field(..., description="Effective rainfall (mm)")
     net_irrigation_mm: Optional[float] = Field(..., description="Net irrigation requirement (mm)")
     recommendation_text: str = Field(..., description="Human-readable recommendation")
-    assumptions: List[str] = Field(default_factory=list, description="List of calculation assumptions")
+    assumptions: List[str] = Field(default_factory=list, description="Full calculation log")
+    et0_method: Optional[str] = Field(
+        None,
+        description="ET0 method used: 'penman-monteith' or 'hargreaves'",
+    )
     created_at: datetime
 
     class Config:
@@ -34,6 +38,10 @@ class IrrigationResponse(BaseModel):
     net_irrigation_mm: Optional[float]
     recommendation_text: str
     assumptions: List[str]
+    et0_method: Optional[str] = Field(
+        None,
+        description="ET0 method used: 'penman-monteith' or 'hargreaves'",
+    )
     created_at: datetime
 
     class Config:

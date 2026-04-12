@@ -62,11 +62,18 @@ export const api = {
   },
   getUser() {
     const s = localStorage.getItem(USER_KEY);
-    return s ? JSON.parse(s) : null;
+    if (!s) return null;
+    try {
+      return JSON.parse(s);
+    } catch {
+      localStorage.removeItem(USER_KEY);
+      return null;
+    }
   },
   logout() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem("hasad_active_farm");
   },
 
   // Auth
@@ -179,8 +186,32 @@ export const api = {
   async calculateDiseaseRisk(id) { return request(`/farms/${id}/disease-risk/calculate`, { method: "POST" }); },
   async getDiseaseRiskHistory(id, limit = 100) { return request(`/farms/${id}/disease-risk/history?limit=${limit}`); },
 
-  // Assistant
+  // Assistant (legacy stateless endpoint — kept for compatibility)
   async chat(farmId, message) {
     return request("/assistant/chat", { method: "POST", body: { farm_id: farmId, message } });
+  },
+
+  // Chat sessions
+  async createChatSession(farmId) {
+    return request("/chat/sessions", { method: "POST", body: { farm_id: farmId } });
+  },
+  async listChatSessions(farmId = null) {
+    const qs = farmId ? `?farm_id=${farmId}` : "";
+    return request(`/chat/sessions${qs}`);
+  },
+  async getChatSession(sessionId) {
+    return request(`/chat/sessions/${sessionId}`);
+  },
+  async renameChatSession(sessionId, title) {
+    return request(`/chat/sessions/${sessionId}`, { method: "PATCH", body: { title } });
+  },
+  async deleteChatSession(sessionId) {
+    return request(`/chat/sessions/${sessionId}`, { method: "DELETE" });
+  },
+  async sendChatMessage(sessionId, farmId, message) {
+    return request(`/chat/sessions/${sessionId}/messages`, {
+      method: "POST",
+      body: { farm_id: farmId, message },
+    });
   },
 };

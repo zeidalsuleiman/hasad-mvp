@@ -55,6 +55,7 @@ services:
       # NOTE: This is intentionally localhost — the browser (running on the host)
       # calls port 8000 which is forwarded by Docker. Do not change to the Docker
       # service name "backend" — that would only work inside the container, not in the browser.
+      - CI=false
     volumes:
       - ./frontend:/app
       - /app/node_modules

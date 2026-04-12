@@ -6,3 +6,7 @@ body {
   color: #0f172a;
 }
 button, input { font-family: inherit; }
+
+/* Remove browser focus ring on mouse/pointer interaction; keep it for keyboard nav */
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible { outline: 2px solid #0F766E; outline-offset: 2px; border-radius: 4px; }

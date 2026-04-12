@@ -10,10 +10,24 @@ logger = logging.getLogger(__name__)
 def send_email(to_email: str, subject: str, html_body: str) -> None:
     """
     Send an email via SMTP.
-    Raises RuntimeError if SMTP is not configured.
-    Raises smtplib.SMTPException on delivery failure.
+
+    In DEBUG mode:
+      - The subject/recipient are always logged so OTPs are visible in backend logs.
+      - If SMTP is not configured or delivery fails, the error is logged and the
+        function returns normally (registration/reset can still complete).
+
+    In production (DEBUG=False):
+      - Raises RuntimeError if SMTP is not configured.
+      - Raises smtplib.SMTPException on delivery failure.
     """
     if not settings.smtp_host:
+        if settings.debug:
+            logger.warning(
+                "[DEV] SMTP not configured — email suppressed. "
+                "To=%s Subject=%s",
+                to_email, subject,
+            )
+            return
         raise RuntimeError(
             "Email delivery is not configured. "
             "Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM in your environment."
@@ -25,19 +39,29 @@ def send_email(to_email: str, subject: str, html_body: str) -> None:
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html"))
 
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-        server.ehlo()
-        if settings.smtp_tls:
-            server.starttls()
+    try:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
             server.ehlo()
-        if settings.smtp_user and settings.smtp_password:
-            server.login(settings.smtp_user, settings.smtp_password)
-        server.sendmail(settings.smtp_from, to_email, msg.as_string())
-
-    logger.info(f"Email sent to {to_email}: {subject}")
+            if settings.smtp_tls:
+                server.starttls()
+                server.ehlo()
+            if settings.smtp_user and settings.smtp_password_clean:
+                server.login(settings.smtp_user, settings.smtp_password_clean)
+            server.sendmail(settings.smtp_from, to_email, msg.as_string())
+        logger.info("Email sent to %s: %s", to_email, subject)
+    except Exception as exc:
+        if settings.debug:
+            logger.warning(
+                "[DEV] SMTP delivery failed (%s) — email suppressed. To=%s Subject=%s",
+                exc, to_email, subject,
+            )
+            return
+        raise
 
 
 def send_verification_email(to_email: str, otp: str) -> None:
+    if settings.debug:
+        logger.info("[DEV] Verification OTP for %s: %s", to_email, otp)
     subject = "HASAD – Verify Your Email"
     body = f"""
 <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;">
@@ -55,6 +79,8 @@ def send_verification_email(to_email: str, otp: str) -> None:
 
 
 def send_password_reset_email(to_email: str, otp: str) -> None:
+    if settings.debug:
+        logger.info("[DEV] Password reset OTP for %s: %s", to_email, otp)
     subject = "HASAD – Password Reset Code"
     body = f"""
 <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;">

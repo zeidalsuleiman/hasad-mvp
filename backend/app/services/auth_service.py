@@ -273,7 +273,9 @@ class AuthService:
         backup_codes = generate_backup_codes(settings.backup_codes_count)
         backup_codes_hashed = hash_backup_codes(backup_codes)
 
-        user.totp_secret_hash = hash_token(totp_secret)
+        # Store the raw secret (not hashed) so TOTP verification can regenerate the
+        # same codes. Column name is legacy; actual value is the raw base32 secret.
+        user.totp_secret_hash = totp_secret
         user.two_factor_enabled = True
         user.backup_codes_hash = backup_codes_hashed
         user.backup_codes_updated_at = _now()

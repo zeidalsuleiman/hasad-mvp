@@ -30,6 +30,9 @@ class CropResponse(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    # Computed fields — populated by the route handler, not stored in DB
+    kc_effective: Optional[float] = None
+    kc_source: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -217,15 +217,15 @@ YOU ARE FORBIDDEN FROM:
     @staticmethod
     def determine_sources(data_references: Dict[str, Any]) -> list[str]:
         """
-        Determine which data sources were used in generating response.
+        Determine which data sources were actually available for this response.
+        Keys exist for all 3 sources even when unavailable (with available=False),
+        so we must check the flag, not just key presence.
         """
         sources = []
-        if "weather" in data_references:
-            sources.append("weather")
-        if "irrigation" in data_references:
-            sources.append("irrigation")
-        if "disease_risk" in data_references:
-            sources.append("disease_risk")
+        for key in ("weather", "irrigation", "disease_risk"):
+            entry = data_references.get(key, {})
+            if entry.get("available", True):  # default True = real data present
+                sources.append(key)
         return sources
 
     @staticmethod

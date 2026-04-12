@@ -9,7 +9,8 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Farms = lazy(() => import("./pages/Farms"));
 const CreateFarm = lazy(() => import("./pages/CreateFarm"));
-const Assistant = lazy(() => import("./pages/Assistant"));
+const IrrigationDetail = lazy(() => import("./pages/IrrigationDetail"));
+const DiseaseDetail = lazy(() => import("./pages/DiseaseDetail"));
 
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
@@ -27,6 +28,10 @@ function AppContent() {
         />
         <Route path="/auth" element={<Auth />} />
         <Route
+          path="/farms"
+          element={isAuthenticated ? <Farms /> : <Navigate to="/auth" />}
+        />
+        <Route
           path="/farms/new"
           element={isAuthenticated ? <CreateFarm /> : <Navigate to="/auth" />}
         />
@@ -35,8 +40,12 @@ function AppContent() {
           element={isAuthenticated ? <Farms /> : <Navigate to="/auth" />}
         />
         <Route
-          path="/farms/:farmId/assistant"
-          element={isAuthenticated ? <Assistant /> : <Navigate to="/auth" />}
+          path="/farms/:farmId/irrigation"
+          element={isAuthenticated ? <IrrigationDetail /> : <Navigate to="/auth" />}
+        />
+        <Route
+          path="/farms/:farmId/disease"
+          element={isAuthenticated ? <DiseaseDetail /> : <Navigate to="/auth" />}
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

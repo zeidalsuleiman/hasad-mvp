@@ -62,7 +62,7 @@ Use this file to record implementation-time assumptions.
 
 **Assumption:** Each farm has at most one active crop configuration. Creating a new crop config deactivates the previous one.
 
-**Why needed:** Simplifies the MVP. Most farms grow one primary crop at a time.
+**Why needed:** Simplifies the system and aligns with current product flow.
 
 **Impact:** POST to crop endpoint deactivates existing active crops. Only one crop per farm is returned.
 
@@ -93,33 +93,33 @@ Use this file to record implementation-time assumptions.
 ### Date: 2026-04-03
 **Area: Soil Types**
 
-**Assumption:** Soil type is a free-text string, not an enum.
+**Assumption:** Soil type may originate as free text in stored data, but irrigation logic normalizes values to canonical buckets internally.
 
-**Why needed:** Allows flexibility for various soil descriptions (clay, loam, sandy, silt, etc.).
+**Why needed:** Existing records and user input may vary in casing/spelling.
 
-**Impact:** No validation on soil types beyond being a non-empty string.
+**Impact:** Irrigation calculations should not silently fail just because soil text varies.
 
 ---
 
 ### Date: 2026-04-03
 **Area: Area Units**
 
-**Assumption:** Farm area is measured in "dunums" (Jordanian unit, ~1000 m²), not hectares or acres.
+**Assumption:** Farm area is measured in dunums (~1000 m²), not hectares or acres.
 
 **Why needed:** This is a Jordanian agricultural system, and dunum is the standard local unit.
 
-**Impact:** Frontend displays area in dunums. Conversion to other units would require backend changes.
+**Impact:** Volume calculations can convert mm/day into practical water totals using dunum-based area.
 
 ---
 
 ### Date: 2026-04-03
 **Area: User Roles**
 
-**Assumption:** Two user roles: "farmer" (default) and "admin". Admin routes are not implemented in Phase 1.
+**Assumption:** Two user roles exist: farmer (default) and admin.
 
-**Why needed:** Prepared for future admin features (monitoring, logs) without blocking Phase 1.
+**Why needed:** Prepared for admin features later without blocking current farmer flows.
 
-**Impact:** Role column exists in database but admin-specific endpoints are not yet implemented.
+**Impact:** Role column exists in database and auth model, even if admin features are not yet the immediate focus.
 
 ---
 
@@ -128,401 +128,94 @@ Use this file to record implementation-time assumptions.
 
 **Assumption:** React Router is used for client-side routing. No server-side rendering.
 
-**Why needed:** Standard approach for React SPAs. Simple to implement and maintain.
+**Why needed:** Standard approach for React SPAs.
 
-**Impact:** All navigation is handled on client side. Page refreshes work but require full reload.
+**Impact:** All navigation is handled on the client side.
 
 ---
 
 ### Date: 2026-04-03
 **Area: Testing Framework**
 
-**Assumption:** pytest is used for backend tests. Frontend tests preferred when practical.
+**Assumption:** pytest is used for backend tests. Frontend tests are preferred when practical.
 
-**Why needed:** pytest is standard for Python testing and integrates well with FastAPI.
+**Why needed:** pytest integrates well with FastAPI and service-layer testing.
 
-**Impact:** Tests use SQLite in-memory database for isolation. Production uses PostgreSQL.
+**Impact:** Backend regression confidence depends primarily on pytest coverage.
 
 ---
 
 ### Date: 2026-04-03
 **Area: Test Database**
 
-**Assumption:** Tests use SQLite in-memory database with SQLAlchemy models. Database URL is overridden via fixtures.
+**Assumption:** Tests use SQLite in-memory database with SQLAlchemy models.
 
-**Why needed:** Isolates test data, faster execution, no external dependencies.
+**Why needed:** Isolates test data, speeds up execution, and avoids requiring a live PostgreSQL for every test.
 
-**Impact:** Tests can run independently of production database.
+**Impact:** Models and JSON field choices should remain SQLite-compatible where practical.
 
 ---
 
 ### Date: 2026-04-03
 **Area: Error Handling**
 
-**Assumption:** Backend errors return JSON with a "detail" field. Frontend displays this to users.
+**Assumption:** Backend errors return JSON with a `detail` field. Frontend displays/extracts this field.
 
-**Why needed:** Consistent error format across all endpoints. FastAPI's default behavior.
+**Why needed:** Consistent error format across endpoints.
 
-**Impact:** Frontend error handling must extract `detail` field from error responses.
-
----
-
-### Date: 2026-04-03 (Phase 1 Test Results)
-
-**Assumption:** Weather endpoint tests have been deferred due to UUID handling complexity. The issue involves PostgreSQL UUID types vs. SQLite in-memory database tests.
-
-**Why needed:** Weather tests require complex UUID handling to work with both SQLite (tests) and PostgreSQL (production). The issue stems from SQLAlchemy's UUID type expecting UUID objects when comparing with string values, but the test fixture is not properly mocking the database behavior.
-
-**Impact:** Weather endpoints are implemented and functional, but tests need refinement. Tests for auth, farms, and crops (39 tests) all pass successfully.
+**Impact:** Frontend error handling should remain aligned with this structure.
 
 ---
 
-### Date: 2026-04-03 (Phase 1 Completion Status)
+### Date: 2026-04-12
+**Area: Irrigation Engine**
 
-**Assumption:** Database migrations are structured and can be applied via Alembic. The initial schema migration (001_initial_schema) defines all Phase 1 tables.
+**Assumption:** Penman-Monteith is used as the primary ET0 method, with Hargreaves as fallback when required inputs are unavailable.
 
-**Why needed:** Provides clean database initialization and version control.
+**Why needed:** Improves scientific accuracy while maintaining robustness.
 
-**Impact:** Production database can be initialized with `alembic upgrade head`. Tests use SQLite with schema creation.
-
----
-
-### Date: 2026-04-03
-**Area: Backend Deployment**
-
-**Assumption:** Docker Compose is configured with PostgreSQL service. The backend depends on db hostname "db".
-
-**Why needed:** Standard containerization approach for FastAPI + PostgreSQL.
-
-**Impact:** Backend must start after PostgreSQL is healthy. Connection string uses `db:5432`.
+**Impact:** Irrigation outputs must clearly state which ET0 method was used.
 
 ---
 
-### Date: 2026-04-03
-**Area: Environment Variables**
+### Date: 2026-04-12
+**Area: Crop Coefficients**
 
-**Assumption:** Configuration uses environment variables via `.env` file. Template provided in `.env.example`.
+**Assumption:** Crop coefficient values are derived from a canonical crop table using crop_type + crop_stage, unless the user provides an override.
 
-**Why needed:** Secure configuration management. Secrets never committed to code.
+**Why needed:** Crop-aware irrigation should not depend on users manually entering Kc as the normal flow.
 
-**Impact:** Developers must copy `.env.example` to `.env` and fill in values. `.env` should be gitignored.
-
----
-
-### Date: 2026-04-03
-**Area: CORS**
-
-**Assumption:** CORS is configured to allow requests from `http://localhost:3000`.
-
-**Why needed:** Standard development setup for React dev server.
-
-**Impact:** Frontend dev server can call backend API without CORS errors. Production would need proper origins list.
+**Impact:** Crop configuration directly influences ETc and irrigation recommendations.
 
 ---
 
-### Date: 2026-04-03
-**Area: Password Storage**
+### Date: 2026-04-12
+**Area: Radiation Estimation**
 
-**Assumption:** Passwords are hashed using bcrypt. The password hash is stored in the database, never in plain text.
+**Assumption:** When direct solar radiation is unavailable, radiation-related terms may be estimated from available weather fields such as cloud cover, date, and latitude.
 
-**Why needed:** Security best practice. Compromise of password database would be catastrophic.
+**Why needed:** External provider data may not include full agronomic radiation variables.
 
-**Impact:** No plaintext passwords in database or logs. Forgotten passwords must be reset.
-
----
-
-### Date: 2026-04-03
-**Area: Service Layer Separation**
-
-**Assumption:** Business logic is separated into service modules (AuthService, FarmService, WeatherService) rather than in route handlers.
-
-**Why needed:** Code is more modular, testable, and reusable.
-
-**Impact:** Route handlers remain thin and focus on request/response handling.
+**Impact:** Irrigation assumptions must document estimated-radiation logic explicitly.
 
 ---
 
-### Date: 2026-04-03
-**Area: Pydantic Schemas**
+### Date: 2026-04-12
+**Area: Disease Engine Evolution**
 
-**Assumption:** Pydantic is used for request/response validation and serialization.
+**Assumption:** The disease risk engine remains rule-based for now, but must be replaceable by crop-specific ML models without changing the API contract.
 
-**Why needed:** Provides automatic validation and type hints.
+**Why needed:** Allows incremental upgrade toward ML while preserving frontend/backend compatibility.
 
-**Impact:** Invalid data returns 400 Bad Request errors before reaching handlers.
-
----
-
-### Date: 2026-04-03
-**Area: SQLAlchemy ORM**
-
-**Assumption:** SQLAlchemy is used with declarative base pattern. Models inherit from Base.
-
-**Why needed:** Standard Python ORM with first-class FastAPI integration.
-
-**Impact:** Database queries are type-safe and efficient.
+**Impact:** Output structure must remain stable through the disease ML phase.
 
 ---
 
-### Date: 2026-04-03 (Phase 1 Weather Tests - RESOLVED)
+### Date: 2026-04-12
+**Area: Assistant Persistence**
 
-**Area: Weather Endpoint Tests**
+**Assumption:** Assistant chat is session-based and persisted in the database, not handled as local-only transient UI state.
 
-**Assumption:** Weather endpoint tests are deferred due to complex UUID handling issues in test environment.
+**Why needed:** Supports per-farm history, continuity, and future RAG/agentic evolution.
 
-**Resolution:** Fixed by adding `uuid.UUID()` conversion in WeatherService methods (`get_farm_weather_history`, `get_latest_weather`, `create_weather_log`) and in the weather API endpoint. The issue was that SQLAlchemy's `UUID(as_uuid=True)` column type expects UUID objects, not strings, when performing comparisons and insertions. SQLite and PostgreSQL handle UUID types differently, but converting string parameters to UUID objects before queries resolves the issue consistently across both databases.
-
-**Impact:** All 10 weather tests now pass. Full test suite: 49/49 tests passing.
-
----
-
-### Date: 2026-04-03 (Phase 1 Status Summary)
-
-**Completed:**
-- PostgreSQL database schema with 4 tables (users, farms, farm_crops, weather_logs)
-- JWT authentication with bcrypt password hashing
-- User registration/login/me endpoints (9 tests pass)
-- Farm CRUD endpoints (14 tests pass)
-- Crop configuration endpoints (11 tests pass)
-- Farm ownership protection verified (7 tests pass)
-- Unauthorized access tests (2 tests pass)
-- Weather current/history endpoints (10 tests pass)
-- Database migration structure (001_initial_schema)
-- Docker Compose with PostgreSQL service
-- Environment variable template (.env.example)
-- Frontend API client updated for /api/v1 paths
-- React Router navigation
-- Frontend AuthContext for auth state management
-- Updated Auth.jsx with email/name fields
-- Updated Dashboard.jsx to show farms list
-- Created Farms.jsx and CreateFarm.jsx pages
-- Comprehensive backend test suite (49 total, 49 pass)
-
-**Outstanding from Phase 1:**
-- Crop configuration UI (backend API exists, but no frontend form yet)
-
-**Ready for Phase 2:**
-- Irrigation recommendation engine (backend service and API stubs ready)
-- Disease risk assessment engine (backend service and API stubs ready)
-
----
-
-### Date: 2026-04-03
-**Area: Irrigation Engine ET0 Method**
-
-**Assumption:** Hargreaves method is used for ET0 calculation. This is a simplified approach that uses available weather data (temperature, latitude, day of year) without requiring full FAO-56 Penman-Monteith inputs (wind speed, solar radiation, humidity).
-
-**Why needed:** Penman-Monteith requires additional weather data that may not be consistently available. Hargreaves is a reasonable approximation for agricultural use.
-
-**Impact:** ET0 calculations are estimates based on temperature and latitude. All assumptions are documented in the irrigation recommendation output.
-
----
-
-### Date: 2026-04-03
-**Area: Irrigation Crop Coefficients**
-
-**Assumption:** Crop coefficient (Kc) values are based on FAO-56 guidelines for common crops. Users can override Kc values if they have crop-specific data.
-
-**Why needed:** Provides scientifically-based defaults while allowing farmer customization.
-
-**Impact:** Default Kc values are reasonable estimates. Farmers can adjust based on local conditions and crop varieties.
-
----
-
-### Date: 2026-04-03
-**Area: Irrigation Soil Factors**
-
-**Assumption:** Different soil types retain different amounts of rainfall. Soil factors are applied to calculate effective rainfall (Sandy: 0.6, Loamy: 0.7, Clay: 0.8, etc.).
-
-**Why needed:** Accounts for drainage characteristics when determining irrigation needs.
-
-**Impact:** Irrigation recommendations consider soil type. Heavy rainfall on sandy soil may require more irrigation than on clay soil.
-
----
-
-### Date: 2026-04-03
-**Area: Disease Risk Engine Model**
-
-**Assumption:** Disease risk assessment uses a generic rule-based model (version 1) for fungal disease risk. This can be replaced by a trained ML model in future versions without changing the API contract.
-
-**Why needed:** MVP requirement is a rule-based system. ML model requires training data and infrastructure not yet available.
-
-**Impact:** Risk assessments are based on evidence-based rules for fungal disease conditions (humidity, temperature, rainfall, wind, cloud cover). Output format (disease_name, risk_score, risk_level, triggered_rules, explanation) is consistent with what an ML model would provide.
-
----
-
-### Date: 2026-04-03
-**Area: Disease Risk Rules**
-
-**Assumption:** Disease risk rules evaluate conditions like high humidity (>80%), moderate humidity with warm temps, recent rainfall (>5mm), high temps (>30°C), low wind (<2 m/s), and cloud cover (>70%). Each rule contributes to risk score (0-100 scale).
-
-**Why needed:** Based on agricultural research about conditions that promote fungal disease development.
-
-**Impact:** Risk scores are calculated from triggered rules. Risk levels: low (0-33), medium (34-66), high (67-100).
-
----
-
-### Date: 2026-04-03 (Phase 2 Status Summary)
-
-**Completed:**
-- Irrigation recommendation model (IrrigationRecommendation table)
-- Irrigation service with Hargreaves ET0 calculation
-- Irrigation API endpoints (calculate, history)
-- Irrigation tests (13 tests pass)
-- Database migration 002 for irrigation table
-- Disease risk assessment model (DiseaseRiskAssessment table)
-- Disease risk service with generic rule-based model
-- Disease risk API endpoints (calculate, history)
-- Disease risk tests (13 tests pass)
-- Database migration 003 for disease table
-- Updated main.py with irrigation and disease routers
-
-**Total Tests:** 75/75 passing (49 Phase 1 + 26 Phase 2)
-
-**Ready for Phase 3:**
-- Grounded AI assistant (backend service and API)
-- Reporting and logs (backend endpoints)
-- Admin observability (backend endpoints)
-
----
-
-### Date: 2026-04-03
-**Area: AI Assistant MVP Design**
-
-**Assumption:** Phase 3 MVP implements a stateless AI assistant that provides agricultural advice grounded in system data. No session persistence - client manages conversation history.
-
-**Why needed:** Simplifies initial implementation. Focuses on grounded, single-turn responses with data attribution. Session management can be added in Phase 4 without changing API contract.
-
-**Impact:** Assistant API requires farm_id and message in request, returns grounded response with sources_used, data_references, and confidence_level. Client must manage conversation state.
-
----
-
-### Date: 2026-04-03
-**Area: AI Assistant System Prompt**
-
-**Assumption:** System prompt uses strict anti-hallucination instructions. Context is injected in structured format (FARM, WEATHER, IRRIGATION, DISEASE RISK). LLM instructed to use ONLY provided data, cite sources, state when data unavailable.
-
-**Why needed:** Prevents AI from giving generic or incorrect advice. Ensures responses are grounded in actual farm data.
-
-**Impact:** All responses are farm-specific and data-sourced. No hallucinated weather, crop, or disease information.
-
----
-
-### Date: 2026-04-03
-**Area: AI Assistant Data Retrieval**
-
-**Assumption:** Assistant retrieves latest data from existing tables (farms, farm_crops, weather_logs, irrigation_recommendations, disease_risk_assessments). "Latest" means most recent by created_at desc, limit 1.
-
-**Why needed:** Provides up-to-date context for AI. Ensures responses reflect current farm state.
-
-**Impact:** Assistant responses reference real calculations and measurements. If no data exists for a category, response states "Available: false" clearly.
-
----
-
-### Date: 2026-04-03
-**Area: AI Assistant Confidence Level**
-
-**Assumption:** Confidence level calculated from data availability: high (3 sources), medium (2 sources), low (1 source), low (no sources).
-
-**Why needed:** Indicates to users how reliable the AI's answer is based on available data.
-
-**Impact:** Users see confidence level and understand when AI has full context vs partial context.
-
----
-
-### Date: 2026-04-03
-**Area: AI Assistant LLM Integration**
-
-**Assumption:** Phase 3 MVP returns structured response rather than calling an LLM. The system prompt and context structure are ready for LLM integration. Future versions can replace the structured response with actual LLM call.
-
-**Why needed:** Allows immediate implementation without LLM API dependency. Demonstrates data retrieval and grounding architecture.
-
-**Impact:** Current responses are template-based with context injection. Future LLM integration can replace the `process_chat_request` return value.
-
----
-
-### Date: 2026-04-03
-**Area: AI Assistant Response Schema**
-
-**Assumption:** ChatResponse includes assistant_response, sources_used (list of data sources), data_references (structured dict with farm, crop, weather, irrigation, disease_risk), and confidence_level.
-
-**Why needed:** Provides frontend with data to display and shows attribution. Confidence level helps users gauge reliability.
-
-**Impact:** Frontend can display context cards (weather conditions, irrigation recommendation, disease risk) alongside AI advice.
-
----
-
-### Date: 2026-04-03 (Phase 3 MVP Status Summary)
-
-**Completed:**
-- AssistantService with structured context building and confidence calculation
-- Assistant schemas (ChatRequest, ChatResponse)
-- Assistant API route (POST /api/v1/assistant/chat) with auth and ownership validation
-- Assistant tests (9 tests pass)
-- Updated main.py with assistant router
-
-**Total Tests:** 84/84 passing (75 Phase 1-2 + 9 Phase 3 MVP)
-
-**No database migration needed:** MVP is stateless, no persistence tables
-
-**Ready for Phase 4:** Full LLM integration, session persistence, reporting endpoints, admin observability.
-
----
-
-### Date: 2026-04-06 (Authentication Hardening Phase)
-
-**Area: Account Activation**
-
-**Assumption:** Account activation is optional and controlled by the `ACTIVATION_REQUIRED` environment variable. Default is `false` to allow immediate login.
-
-**Why needed:** Production systems typically require email verification, but this adds friction. Making it configurable allows development without email infrastructure while enabling it for production.
-
-**Impact:** When `ACTIVATION_REQUIRED=false` (default), new users are immediately verified. When `true`, users receive an activation token and must verify before login. In debug mode (`DEBUG=true`), the activation token is returned in the API response for testing purposes. In production, it would be sent via email.
-
----
-
-### Date: 2026-04-06 (Authentication Hardening Phase)
-
-**Area: Password Reset Flow**
-
-**Assumption:** Password reset tokens expire after 1 hour (configurable via `PASSWORD_RESET_EXPIRE_HOURS`). Tokens are SHA-256 hashed before storage. The forgot-password endpoint always returns success to prevent email enumeration.
-
-**Why needed:** Security best practice to limit reset window and prevent timing attacks. Hashing tokens prevents database compromise from allowing password resets. Generic success messages prevent attackers from determining which emails are registered.
-
-**Impact:** Password reset flow is secure and prevents enumeration. Users receive generic "if your email is registered" message. Implementation requires email service integration for production (currently tokens are logged for development).
-
----
-
-### Date: 2026-04-06 (Authentication Hardening Phase)
-
-**Area: Two-Factor Authentication (2FA)**
-
-**Assumption:** 2FA is optional, user-controlled via TOTP (Time-based One-Time Password). Users can enable/disable 2FA, and receive 10 backup codes for recovery. TOTP uses standard configuration (6 digits, 30-second interval).
-
-**Why needed:** TOTP is the industry standard for 2FA, works offline with authenticator apps, and has no SMS cost. Optional 2FA provides security for users who want it without mandatory friction. Backup codes prevent lockout when authenticator is lost.
-
-**Impact:** Users with 2FA enabled must provide a code during login. Login returns `requires_2fa=true` flag, triggering second verification step. Backend uses pyotp for TOTP generation/verification. Secrets are SHA-256 hashed before storage. Backup codes are individually hashed and marked as consumed after use.
-
----
-
-### Date: 2026-04-06 (Authentication Hardening Phase)
-
-**Area: Password Validation**
-
-**Assumption:** Backend enforces minimum 8-character password length only. Additional complexity rules are displayed as recommendations in the frontend but not enforced by the backend.
-
-**Why needed:** Minimum length prevents trivially weak passwords. Complexity rules vary by security policy and user preferences. Frontend guidance encourages stronger passwords without blocking users who prefer memorable patterns.
-
-**Impact:** Users can set any 8+ character password. Frontend shows recommendations (uppercase, lowercase, numbers, special characters) but these are not backend-enforced. Passwords are bcrypt-hashed before storage.
-
----
-
-### Date: 2026-04-06 (Authentication Hardening Phase)
-
-**Area: Token Security**
-
-**Assumption:** Activation tokens and password reset tokens are 32-byte random values (64 hex characters). Tokens are SHA-256 hashed before database storage. Tokens have configurable expiration (24 hours for activation, 1 hour for password reset).
-
-**Why needed:** Cryptographically secure random tokens prevent brute-force guessing. Hashing prevents token reuse even if database is compromised. Expiration limits security window.
-
-**Impact:** Tokens are generated using Python's `secrets` module. Hashing uses SHA-256 via hashlib. Verification compares hash of provided token with stored hash. Expired tokens are rejected with appropriate error message.
+**Impact:** Chat session/message tables and assistant flows must not regress to stateless/local-only behavior.

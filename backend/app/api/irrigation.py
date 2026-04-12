@@ -25,8 +25,9 @@ def calculate_irrigation(
     """
     Calculate and store irrigation recommendation for a farm.
 
-    Uses current weather data and crop configuration to compute daily
-    irrigation requirement using Hargreaves ET0 method.
+    Uses current weather data and active crop configuration to compute daily
+    irrigation requirement.  Primary ET0 method is FAO-56 Penman-Monteith;
+    Hargreaves-Samani is used as fallback when humidity data is unavailable.
     """
     # Validate farm ownership
     farm = FarmService.get_farm_by_id(db, farm_id)
@@ -50,6 +51,7 @@ def calculate_irrigation(
     # Calculate irrigation recommendation
     recommendation = IrrigationService.calculate_irrigation(db, farm, weather, crop)
 
+    aj = recommendation.assumptions_json or {}
     return IrrigationCalculateResponse(
         id=recommendation.id,
         farm_id=recommendation.farm_id,
@@ -60,9 +62,8 @@ def calculate_irrigation(
         effective_rainfall_mm=recommendation.effective_rainfall_mm,
         net_irrigation_mm=recommendation.net_irrigation_mm,
         recommendation_text=recommendation.recommendation_text,
-        assumptions=recommendation.assumptions_json.get("assumptions", [])
-        if recommendation.assumptions_json
-        else [],
+        assumptions=aj.get("assumptions", []),
+        et0_method=aj.get("et0_method"),
         created_at=recommendation.created_at,
     )
 
@@ -96,9 +97,8 @@ def get_irrigation_history(
             effective_rainfall_mm=rec.effective_rainfall_mm,
             net_irrigation_mm=rec.net_irrigation_mm,
             recommendation_text=rec.recommendation_text,
-            assumptions=rec.assumptions_json.get("assumptions", [])
-            if rec.assumptions_json
-            else [],
+            assumptions=(rec.assumptions_json or {}).get("assumptions", []),
+            et0_method=(rec.assumptions_json or {}).get("et0_method"),
             created_at=rec.created_at,
         )
         for rec in recommendations

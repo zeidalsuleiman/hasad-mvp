@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/hasad-logo.png";
 import { api } from "../api/client";
 import { useAuth } from "../contexts/AuthContext";
+import { PageHeader, BrandLogo, HBtn } from "../components/PageHeader";
 
 export default function CreateFarm() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,8 +35,9 @@ export default function CreateFarm() {
         notes: formData.notes || null,
       };
 
-      const result = await api.createFarm(data);
-      navigate(`/farms/${result.id}`);
+      const farm = await api.createFarm(data);
+      localStorage.setItem("hasad_active_farm", farm.id);
+      navigate("/");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -46,30 +47,13 @@ export default function CreateFarm() {
 
   return (
     <div style={wrap}>
-      <header style={header}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img
-            src={logo}
-            alt="HASAD"
-            style={{ width: "clamp(120px, 20vw, 180px)", height: "auto" }}
-          />
-          <div>
-            <div style={{ fontWeight: 900 }}>Create New Farm</div>
-            <div style={{ fontSize: 12, color: "var(--muted)" }}>
-              {user?.full_name || "Farmer"}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <button style={secondaryBtn} onClick={() => navigate("/")}>
-            Cancel
-          </button>
-          <button style={logoutBtn} onClick={logout}>
-            Logout
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        left={<BrandLogo subtitle="Create New Farm" />}
+        right={<>
+          <button style={HBtn.nav} onClick={() => navigate("/")}>Cancel</button>
+          <button style={HBtn.logout} onClick={logout}>Logout</button>
+        </>}
+      />
 
       <main style={main}>
         <section style={card}>
@@ -184,27 +168,13 @@ export default function CreateFarm() {
 
 const wrap = {
   minHeight: "100vh",
-  background:
-    "radial-gradient(700px circle at 20% 10%, rgba(22,163,74,0.12), transparent 55%), linear-gradient(180deg, #F7FBFA 0%, #ECF7F1 100%)",
-};
-
-const header = {
-  height: 72,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  padding: "0 22px",
-  borderBottom: "1px solid rgba(0,0,0,0.06)",
-  background: "rgba(255,255,255,0.7)",
-  backdropFilter: "blur(10px)",
-  position: "sticky",
-  top: 0,
+  background: "#F8FAFC",
 };
 
 const main = {
   maxWidth: 600,
-  margin: "18px auto",
-  padding: "0 18px 40px",
+  margin: "0 auto",
+  padding: "40px 18px 40px",
   display: "grid",
   gap: 16,
 };
@@ -278,11 +248,3 @@ const secondaryBtn = {
   fontWeight: 800,
 };
 
-const logoutBtn = {
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid rgba(0,0,0,0.1)",
-  background: "white",
-  cursor: "pointer",
-  fontWeight: 800,
-};

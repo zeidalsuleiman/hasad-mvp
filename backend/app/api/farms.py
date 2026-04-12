@@ -8,9 +8,21 @@ from app.models.user import User
 from app.models.farm import Farm
 from app.models.crop import FarmCrop
 from app.services.farm_service import FarmService
+from app.services import crop_service
 from app.api.deps import get_current_user
 
 router = APIRouter()
+
+
+def _crop_response(crop: FarmCrop) -> CropResponse:
+    """Build CropResponse and populate computed kc_effective / kc_source."""
+    kc, kc_src = crop_service.get_kc(
+        crop_type=crop.crop_type,
+        crop_stage=crop.crop_stage,
+        override=crop.kc_value_override,
+    )
+    resp = CropResponse.model_validate(crop)
+    return resp.model_copy(update={"kc_effective": round(kc, 4), "kc_source": kc_src})
 
 
 @router.get("", response_model=List[FarmResponse])
@@ -78,7 +90,7 @@ def get_farm_crop(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get the crop configuration for a farm."""
+    """Get the active crop configuration for a farm (includes derived kc_effective)."""
     farm = FarmService.get_farm_by_id(db, farm_id)
     FarmService.check_ownership(farm, str(current_user.id))
     crop = FarmService.get_farm_crop(db, farm_id)
@@ -87,7 +99,7 @@ def get_farm_crop(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No crop configuration found for this farm",
         )
-    return CropResponse.model_validate(crop)
+    return _crop_response(crop)
 
 
 @router.post("/{farm_id}/crop", response_model=CropResponse, status_code=status.HTTP_201_CREATED)
@@ -97,11 +109,11 @@ def create_farm_crop(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Create or update the crop configuration for a farm."""
+    """Create (or replace) the crop configuration for a farm."""
     farm = FarmService.get_farm_by_id(db, farm_id)
     FarmService.check_ownership(farm, str(current_user.id))
     crop = FarmService.create_crop(db, farm_id, crop_data)
-    return CropResponse.model_validate(crop)
+    return _crop_response(crop)
 
 
 @router.patch("/{farm_id}/crop", response_model=CropResponse)
@@ -111,7 +123,7 @@ def update_farm_crop(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Update the crop configuration for a farm."""
+    """Update the active crop configuration for a farm."""
     farm = FarmService.get_farm_by_id(db, farm_id)
     FarmService.check_ownership(farm, str(current_user.id))
     crop = FarmService.get_farm_crop(db, farm_id)
@@ -121,4 +133,4 @@ def update_farm_crop(
             detail="No crop configuration found for this farm",
         )
     updated_crop = FarmService.update_crop(db, crop, crop_data)
-    return CropResponse.model_validate(updated_crop)
+    return _crop_response(updated_crop)

@@ -1,5 +1,5 @@
-from sqlalchemy import Column, String, Boolean, DateTime
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, Boolean, DateTime, JSON
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
 from datetime import datetime
@@ -36,8 +36,8 @@ class User(Base):
     # 2FA
     totp_secret_hash = Column(String(255), nullable=True)
     two_factor_enabled = Column(Boolean, default=False, nullable=False)
-    backup_codes_hash = Column(JSONB, nullable=True)
+    backup_codes_hash = Column(JSON, nullable=True)
     backup_codes_updated_at = Column(DateTime, nullable=True)
 
     farms = relationship("Farm", back_populates="user", cascade="all, delete-orphan")
-    # chat_sessions relationship will be added in Phase 3
+    chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")

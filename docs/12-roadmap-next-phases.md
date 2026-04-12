@@ -1,93 +1,86 @@
 # HASAD Roadmap — Next Phases
 
-## Phase A — Stabilization (NOW)
+## Phase A — Stabilization → DONE
+- Auth fixed
+- Dashboard fixed
+- UI stabilized
 
-Goal: Fully working system end-to-end
+## Phase B — Product Alignment → DONE
+- UI aligned with spec
+- flows validated
 
-Tasks:
-- fix authentication (OTP + email + CORS)
-- remove legacy token flows
-- fix dashboard rendering
-- fix farm configuration UI
-- ensure all main flows work
+## Phase C — Irrigation Upgrade → DONE
+- Full Penman-Monteith implemented
+- fallback logic added
+- assumptions tracking added
 
-Exit Criteria:
-- user can:
-  register → verify → login → use system fully
+## Phase D — Disease ML → NEXT
 
----
-
-## Phase B — Product Alignment
-
-Goal: Match system with specs
+Goal:
+Replace rule-based disease engine with ML
 
 Tasks:
-- align dashboard with frontend-spec
-- add loading/error states
-- clean UI/UX
-- validate flows against acceptance tests
-
----
-
-## Phase C — Irrigation Upgrade
-
-Goal: Improve scientific accuracy
-
-Tasks:
-- extend ET0 calculation
-- move toward Penman-Monteith compatibility
-- define missing inputs
-- add fallback logic
-- improve assumptions tracking
-
----
-
-## Phase D — Disease Engine Upgrade
-
-Goal: Replace rules with ML
-
-Tasks:
+- select crops (start with 2–3)
+- define disease targets
+- prepare dataset
+- train model (Random Forest recommended)
+- integrate into backend
 - keep API unchanged
-- introduce ML model
-- define training data
-- add confidence scoring
-- fallback to rules if needed
+- add confidence score
+- fallback to rules
 
 ---
 
-## Phase E — AI Assistant Stabilization
+## Phase E — AI Assistant Upgrade (RAG)
 
-Goal: Fully working assistant
-
-Tasks:
-- integrate LLM properly
-- ensure grounding
-- use farm + weather + irrigation context
-- ensure stable responses
-- connect to UI
-
----
-
-## Phase F — Agentic AI (FINAL)
-
-Goal: System-wide intelligent orchestration
+Goal:
+Make assistant fully grounded
 
 Tasks:
-- define agent roles
-- allow tool usage:
+- include:
+  - crop
   - irrigation
   - disease
-  - assistant
-- ensure safe decision boundaries
-- keep system deterministic
+  - weather
+- use structured context
+- reduce hallucination
+- improve explanation quality
+
+---
+
+## Phase F — Admin & Observability
+
+Goal:
+Add system visibility
+
+Tasks:
+- user monitoring
+- logs inspection
+- debug tools
+- system metrics
+
+---
+
+## Phase G — Agentic AI (FINAL)
+
+Goal:
+Assistant becomes orchestrator
+
+Tasks:
+- tool-based reasoning:
+  - irrigation
+  - disease
+  - weather
+- multi-step decisions
+- safe boundaries
 
 ---
 
 ## Final State
 
 System is:
-- fully functional
 - scientifically valid
-- user-friendly
-- AI-enhanced
-- ready for deployment
+- crop-aware
+- ML-enhanced
+- explainable
+- AI-assisted

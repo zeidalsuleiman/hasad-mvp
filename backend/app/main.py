@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, farms, weather, irrigation, disease, assistant
+from app.api import auth, farms, weather, irrigation, disease, assistant, chat
 from app.core.config import settings
 
 app = FastAPI(
@@ -26,6 +26,7 @@ app.include_router(farms.router, prefix="/api/v1/farms", tags=["farms"])
 app.include_router(irrigation.router, prefix="/api/v1/farms", tags=["irrigation"])
 app.include_router(disease.router, prefix="/api/v1/farms", tags=["disease-risk"])
 app.include_router(assistant.router, prefix="/api/v1/assistant", tags=["assistant"])
+app.include_router(chat.router, prefix="/api/v1/chat", tags=["chat"])
 
 
 @app.get("/health")

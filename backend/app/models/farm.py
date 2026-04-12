@@ -26,3 +26,4 @@ class Farm(Base):
     weather_logs = relationship("WeatherLog", back_populates="farm", cascade="all, delete-orphan")
     irrigation_recommendations = relationship("IrrigationRecommendation", back_populates="farm", cascade="all, delete-orphan")
     disease_risk_assessments = relationship("DiseaseRiskAssessment", back_populates="farm", cascade="all, delete-orphan")
+    chat_sessions = relationship("ChatSession", back_populates="farm")

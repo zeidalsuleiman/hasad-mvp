@@ -7,6 +7,15 @@
 - password_hash
 - role enum(farmer, admin)
 - is_active
+- is_verified
+- two_factor_enabled
+- totp_secret_hash nullable
+- backup_codes_hash nullable
+- backup_codes_updated_at nullable
+- activation_token_hash nullable
+- activation_token_expires_at nullable
+- password_reset_token_hash nullable
+- password_reset_token_expires_at nullable
 - created_at
 - updated_at
 
@@ -41,6 +50,9 @@
 - source
 - observed_at
 - temperature_c nullable
+- temp_max_c nullable
+- temp_min_c nullable
+- dew_point_c nullable
 - humidity_pct nullable
 - wind_speed_mps nullable
 - pressure_hpa nullable
@@ -55,6 +67,7 @@
 - farm_id FK farms.id
 - weather_log_id FK weather_logs.id nullable
 - et0
+- et0_method nullable
 - kc
 - etc
 - effective_rainfall_mm nullable
@@ -101,3 +114,10 @@
 - entity_id nullable
 - metadata_json nullable
 - created_at
+
+## Notes
+- One farm can have multiple crop records historically, but only one active crop configuration at a time.
+- Weather logs are append-only records tied to farms.
+- Irrigation and disease results are persisted as historical records.
+- Chat sessions are farm-aware but farm_id is nullable so session history can survive farm deletion if desired.
+- Scientific outputs remain explainable via assumptions_json and related metadata.
